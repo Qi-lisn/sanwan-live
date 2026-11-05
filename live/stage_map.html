@@ -116,7 +116,7 @@ async function tick(){
     LIGHT.style.left=(x+dir*58)+'px'; LIGHT.style.top=(LANE_Y-74)+'px';
     LIGHT.style.transform=`scaleX(${dir})`;
     LIGHT.style.opacity=.9;
-    if(o.seq!==lastSeq){lastSeq=o.seq;mode='ride';showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
+    if(o.seq!==lastSeq){lastSeq=o.seq;mode='ride';walkUntil=0;showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
   }else{
     sc.style.left=START_X+'px'; sc.style.top=LANE_Y+'px'; sc.style.transform='translate(-50%,-100%)';
     LIGHT.style.opacity=0;

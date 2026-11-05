@@ -1,35 +1,40 @@
 <!doctype html><html lang="zh"><head><meta charset="utf-8"><title>三万跑单</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:#070910;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB",sans-serif}
+html,body{height:100%;background:#05070d;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB",sans-serif}
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;overflow:hidden}
-#scene{position:absolute;inset:0}
-#scooter{position:absolute;width:170px;height:114px;transform:translate(-50%,-100%);z-index:5}
-#light{position:absolute;width:260px;height:120px;transform-origin:100% 50%;pointer-events:none;z-index:4;
-  background:radial-gradient(ellipse at 100% 50%,rgba(255,225,160,.55),rgba(255,200,120,.12) 55%,transparent 78%);filter:blur(3px)}
-#hud{position:absolute;left:64px;top:46px;color:#dfe6ff;z-index:6}
-#hud .big{font-size:34px;letter-spacing:8px;color:#fff;text-shadow:0 0 26px rgba(120,160,255,.6)}
-#hud .sub{font-size:19px;color:#93a0c8;margin-top:10px;letter-spacing:2px}
-#badge{position:absolute;left:64px;top:132px;font-size:18px;color:#aab6dd;letter-spacing:3px;z-index:6;
-  background:rgba(16,20,36,.72);border:1px solid rgba(120,140,210,.3);border-radius:999px;padding:8px 20px}
-#card{position:absolute;right:62px;top:132px;width:420px;z-index:6;
-  background:linear-gradient(160deg,rgba(26,32,54,.94),rgba(16,20,36,.94));
-  border:1px solid rgba(130,150,230,.35);border-radius:22px;padding:24px 26px;color:#e9eeff;
-  box-shadow:0 24px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06)}
-#card .k{font-size:15px;color:#8f9bc4;letter-spacing:4px}
+#bg,#lights{position:absolute;inset:0;width:1920px;height:1080px;object-fit:cover;user-select:none;-webkit-user-drag:none}
+#lights{mix-blend-mode:screen;animation:flicker 6s infinite ease-in-out}
+@keyframes flicker{0%,100%{opacity:.85}23%{opacity:.95}41%{opacity:.72}57%{opacity:.9}73%{opacity:.8}}
+#vign{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(4,6,14,.45) 100%);pointer-events:none}
+#scooter{position:absolute;width:190px;height:126px;transform:translate(-50%,-100%);z-index:5;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+#light{position:absolute;width:360px;height:150px;transform-origin:0 50%;pointer-events:none;z-index:4;opacity:.9;
+  background:radial-gradient(ellipse at 0 50%,rgba(255,226,160,.5),rgba(255,200,120,.14) 45%,transparent 72%);filter:blur(4px)}
+#hud{position:absolute;left:64px;top:46px;color:#e6ecff;z-index:6;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+#hud .big{font-size:34px;letter-spacing:8px;color:#fff}
+#hud .sub{font-size:19px;color:#c3cdea;margin-top:10px;letter-spacing:2px}
+#badge{position:absolute;left:64px;top:134px;font-size:18px;color:#dbe2ff;letter-spacing:3px;z-index:6;
+  background:rgba(14,18,32,.6);border:1px solid rgba(150,170,230,.35);border-radius:999px;padding:8px 20px;backdrop-filter:blur(6px)}
+#card{position:absolute;right:62px;top:118px;width:420px;z-index:6;
+  background:linear-gradient(160deg,rgba(24,30,52,.9),rgba(12,16,30,.92));
+  border:1px solid rgba(140,160,235,.35);border-radius:22px;padding:24px 26px;color:#eef2ff;
+  box-shadow:0 24px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(8px)}
+#card .k{font-size:15px;color:#93a0c8;letter-spacing:4px}
 #card .good{font-size:40px;margin:10px 0 2px;color:#fff}
 #card .to{font-size:22px;color:#ffd08a;margin-bottom:12px}
-#card .row{display:flex;justify-content:space-between;font-size:19px;color:#b9c3e6;margin-top:9px}
+#card .row{display:flex;justify-content:space-between;font-size:19px;color:#c3cdea;margin-top:9px}
 #card .bar{height:12px;border-radius:8px;background:#202844;margin-top:16px;overflow:hidden}
 #card .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd08a,#ff9f43);transition:width .9s linear}
 #card .pay{font-size:30px;color:#ffd08a}
-#msg{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);font-size:38px;color:#fff;z-index:7;
-  background:rgba(10,14,26,.8);border:1px solid rgba(150,170,230,.3);border-radius:999px;padding:12px 42px;
-  letter-spacing:2px;opacity:0;transition:opacity .35s}
-#tag{position:absolute;left:64px;bottom:44px;font-size:18px;color:#7d88ad;letter-spacing:4px;z-index:6}
+#msg{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);font-size:38px;color:#fff;z-index:7;
+  background:rgba(8,12,22,.78);border:1px solid rgba(160,180,240,.35);border-radius:999px;padding:12px 42px;
+  letter-spacing:2px;opacity:0;transition:opacity .35s;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+#tag{position:absolute;left:64px;bottom:42px;font-size:18px;color:#9aa6cc;letter-spacing:4px;z-index:6;text-shadow:0 2px 8px rgba(0,0,0,.7)}
 </style></head><body>
 <div id="stage">
-  <svg id="scene" viewBox="0 0 1920 1080"></svg>
+  <img id="bg" src="street_bg.png" alt="">
+  <img id="lights" src="street_lights.png" alt="">
+  <div id="vign"></div>
   <div id="light"></div>
   <div id="scooter"></div>
   <div id="hud"><div class="big">三万跑单</div><div class="sub" id="sub">今日 0 单 · 赚 0.0 元</div></div>
@@ -50,153 +55,48 @@ const stage=document.getElementById('stage');
 function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
 addEventListener('resize',fit);fit();
 
-const NS='http://www.w3.org/2000/svg', SVG=document.getElementById('scene');
-const E=(n,a={},p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
-const rnd=(a,b)=>a+Math.random()*(b-a);
+/* 楼中心 x（从底图实测） */
+const SHOPS={
+  '公司':265, '便利店':556, '小区':802, '学校':1105, '医院':1369, '商场':1649
+};
+const START_X=265, LANE_Y=918;
 
-/* 天空 */
-const defs=E('defs',{},SVG);
-function grad(id,stops,x1=0,y1=0,x2=0,y2=1){
-  const g=E('linearGradient',{id,x1,y1,x2,y2},defs);
-  stops.forEach(([o,c])=>E('stop',{offset:o,'stop-color':c},g));
-}
-grad('sky',[[0,'#0a1024'],[.45,'#141d3a'],[.78,'#213055'],[1,'#2d3c62']]);
-grad('road',[[0,'#161b2b'],[1,'#0d1120']]);
-grad('win',[[0,'#ffe3a8'],[1,'#ffb648']]);
-E('rect',{x:0,y:0,width:1920,height:760,fill:'url(#sky)'},SVG);
-
-/* 星星 + 月亮 */
-for(let i=0;i<90;i++)E('circle',{cx:rnd(0,1920),cy:rnd(0,520),r:rnd(.4,1.7),fill:'#dfe9ff',opacity:rnd(.15,.75)},SVG);
-E('circle',{cx:1560,cy:150,r:46,fill:'#f4ecd2',opacity:.92},SVG);
-E('circle',{cx:1560,cy:150,r:90,fill:'#f4ecd2',opacity:.07},SVG);
-
-/* 远景剪影 */
-let d='M0 700 ';
-for(let x=0;x<1920;x+=60)d+=`L${x} ${700-rnd(60,190)} L${x+60} ${700-rnd(40,160)} `;
-d+='L1920 760 L0 760 Z';
-E('path',{d,fill:'#16204a',opacity:.75},SVG);
-
-/* 楼 */
-const PLACES=[
-  {name:'公司',x:250,w:250,h:300,c:'#2a3457',sign:'#8fb4ff'},
-  {name:'便利店',x:560,w:170,h:180,c:'#31405f',sign:'#7ef0c0'},
-  {name:'小区',x:820,w:230,h:250,c:'#2b3152',sign:'#ffd08a'},
-  {name:'学校',x:1120,w:210,h:220,c:'#333a5e',sign:'#a9c4ff'},
-  {name:'医院',x:1380,w:190,h:260,c:'#2e3a5c',sign:'#ff9d9d'},
-  {name:'商场',x:1600,w:250,h:280,c:'#2a3457',sign:'#ffb86b'},
-];
-const BASE=760;
-PLACES.forEach(p=>{
-  const {x,w,h,c}=p;
-  E('rect',{x,y:BASE-h,width:w,height:h,fill:c,rx:4},SVG);
-  E('rect',{x:x-8,y:BASE-h-14,width:w+16,height:16,fill:'#3a4670',rx:3},SVG);
-  E('rect',{x,y:BASE-6,width:w,height:6,fill:'#0e1322',opacity:.7},SVG);
-  // 窗
-  const cols=Math.max(2,Math.floor(w/52)), rows=Math.max(2,Math.floor(h/62));
-  for(let r=0;r<rows;r++)for(let cc=0;cc<cols;cc++){
-    const lit=Math.random()<.62;
-    const wx=x+18+cc*((w-36)/cols), wy=BASE-h+26+r*((h-60)/rows);
-    E('rect',{x:wx,y:wy,width:22,height:24,rx:2,fill:lit?'url(#win)':'#1c2440',opacity:lit?.9:.7},SVG);
-  }
-  // 门
-  E('rect',{x:x+w/2-22,y:BASE-64,width:44,height:64,rx:3,fill:'#141a2e'},SVG);
-  E('rect',{x:x+w/2-22,y:BASE-64,width:44,height:64,rx:3,fill:'rgba(255,210,140,.14)'},SVG);
-  // 招牌
-  const sw=Math.max(96,p.name.length*40+40);
-  E('rect',{x:x+w/2-sw/2,y:BASE-h-58,width:sw,height:40,rx:8,fill:'rgba(12,16,30,.92)',stroke:p.sign,'stroke-opacity':.55},SVG);
-  const t=E('text',{x:x+w/2,y:BASE-h-31,'text-anchor':'middle','font-size':23,fill:p.sign,'letter-spacing':4},SVG);
-  t.textContent=p.name;
-});
-
-/* 路面 */
-E('rect',{x:0,y:760,width:1920,height:320,fill:'url(#road)'},SVG);
-E('rect',{x:0,y:756,width:1920,height:8,fill:'#39456b'},SVG);
-for(let x=-40;x<1960;x+=120)E('rect',{x,y:900,width:64,height:8,rx:4,fill:'#58658f',opacity:.55},SVG);
-E('rect',{x:0,y:1040,width:1920,height:40,fill:'#0a0e1a'},SVG);
-
-/* 路灯与树 */
-for(let x=120;x<1900;x+=280){
-  E('rect',{x:x-3,y:690,width:6,height:120,fill:'#2a3350'},SVG);
-  E('circle',{cx:x,cy:686,r:9,fill:'#ffd08a'},SVG);
-  E('circle',{cx:x,cy:686,r:52,fill:'#ffd08a',opacity:.10},SVG);
-}
-for(let x=300;x<1900;x+=420){
-  E('circle',{cx:x,cy:742,r:26,fill:'#22402f',opacity:.9},SVG);
-  E('circle',{cx:x-9,cy:732,r:15,fill:'#2c6b52',opacity:.9},SVG);
-}
-
-/* 骑手（电动车 + 外卖箱） */
-const sc=document.getElementById('scooter');
-sc.innerHTML=`<svg viewBox="0 0 120 80">
-  <ellipse cx="60" cy="76" rx="46" ry="6" fill="rgba(0,0,0,.45)"/>
-  <circle cx="28" cy="62" r="14" fill="#1a1f30" stroke="#4a5680" stroke-width="3"/>
-  <circle cx="94" cy="62" r="14" fill="#1a1f30" stroke="#4a5680" stroke-width="3"/>
-  <path d="M28 62 L58 44 L94 62" stroke="#dfe6ff" stroke-width="5" fill="none" stroke-linecap="round"/>
-  <rect x="44" y="20" width="34" height="26" rx="6" fill="#ffb648"/>
-  <rect x="48" y="24" width="26" height="7" rx="3" fill="#fff3d0" opacity=".9"/>
-  <circle cx="66" cy="12" r="10" fill="#cfe0ff"/>
-  <path d="M52 40 L70 40" stroke="#8a94b8" stroke-width="3"/>
+const sc=document.getElementById('scooter'), LIGHT=document.getElementById('light');
+sc.innerHTML=`<svg viewBox="0 0 150 100">
+  <ellipse cx="75" cy="94" rx="58" ry="8" fill="rgba(0,0,0,.45)"/>
+  <circle cx="34" cy="76" r="17" fill="#12172a" stroke="#4d5a86" stroke-width="4"/>
+  <circle cx="116" cy="76" r="17" fill="#12172a" stroke="#4d5a86" stroke-width="4"/>
+  <path d="M34 76 L70 52 L116 76" stroke="#e7ecff" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <rect x="52" y="18" width="46" height="34" rx="8" fill="#ffb648"/>
+  <rect x="58" y="24" width="34" height="9" rx="4" fill="#fff6da" opacity=".95"/>
+  <circle cx="80" cy="8" r="12" fill="#d7e3ff"/>
+  <path d="M62 52 L100 52" stroke="#8f9bc4" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="126" cy="66" r="4" fill="#fff2c8"/>
 </svg>`;
-const LIGHT=document.getElementById('light');
 
-
-/* 路边道具 */
-const PROPS=[{t:'bus',x:660},{t:'vend',x:470},{t:'bike',x:1180},{t:'hydrant',x:1330}];
-PROPS.forEach(p=>{
-  if(p.t==='bus'){
-    E('rect',{x:p.x,y:800,width:120,height:86,rx:6,fill:'#1b2237',stroke:'#3a4670','stroke-width':2},SVG);
-    E('rect',{x:p.x+8,y:810,width:104,height:30,rx:3,fill:'#2b3856',opacity:.9},SVG);
-    E('rect',{x:p.x+8,y:808,width:104,height:4,fill:'#ffd08a',opacity:.55},SVG);
-    E('rect',{x:p.x+10,y:850,width:100,height:26,rx:3,fill:'#131a2c'},SVG);
-    const t=E('text',{x:p.x+60,y:870,'text-anchor':'middle','font-size':13,fill:'#7f8db6'},SVG); t.textContent='公交站';
-  }
-  if(p.t==='vend'){
-    E('rect',{x:p.x,y:742,width:46,height:78,rx:4,fill:'#20283f',stroke:'#3a4670'},SVG);
-    E('rect',{x:p.x+5,y:748,width:36,height:44,rx:2,fill:'#2f4a6b'},SVG);
-    for(let i=0;i<3;i++)E('rect',{x:p.x+8+i*11,y:752,width:8,height:12,fill:'#9fd8ff',opacity:.75},SVG);
-    E('rect',{x:p.x+6,y:798,width:34,height:14,rx:2,fill:'#141a2c'},SVG);
-  }
-  if(p.t==='bike'){
-    E('circle',{cx:p.x,cy:812,r:12,fill:'none',stroke:'#5b6890','stroke-width':3},SVG);
-    E('circle',{cx:p.x+34,cy:812,r:12,fill:'none',stroke:'#5b6890','stroke-width':3},SVG);
-    E('path',{d:`M${p.x} 812 L${p.x+17} 790 L${p.x+34} 812`,stroke:'#5b6890','stroke-width':3,fill:'none'},SVG);
-  }
-  if(p.t==='hydrant'){
-    E('rect',{x:p.x,y:804,width:14,height:26,rx:3,fill:'#b6483f'},SVG);
-    E('circle',{cx:p.x+7,cy:804,r:7,fill:'#d4564b'},SVG);
-  }
-});
-/* 湿地反光 */
-const refl=E('linearGradient',{id:'refl',x1:0,y1:0,x2:0,y2:1},defs);
-[['0','rgba(255,200,120,.16)'],['1','rgba(255,200,120,0)']].forEach(([o,c])=>E('stop',{offset:o,'stop-color':c},refl));
-PLACES.forEach(p=>E('rect',{x:p.x+10,y:760,width:p.w-20,height:70,fill:'url(#refl)'},SVG));
-
-/* 订单 → 目的地 x */
-function destX(name){const p=PLACES.find(p=>p.name===name);return p? p.x+p.w/2 : 960}
-const STARTX=250+125;
 let lastSeq=-1, lastStatus='';
-
 function showMsg(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>m.style.opacity=0,4200)}
 
 async function tick(){
   let d;try{d=await (await fetch('/delivery',{cache:'no-store'})).json()}catch(e){return}
   document.getElementById('sub').textContent=`今日 ${d.delivered} 单 · 赚 ${d.earned.toFixed(1)} 元 · 超时 ${d.late} 次`;
   if(d.order){
-    const o=d.order, x=STARTX+(destX(o.place_name)-STARTX)*Math.min(1,d.progress);
+    const o=d.order, tx=SHOPS[o.place_name]||960;
+    const p=Math.min(1,d.progress), x=START_X+(tx-START_X)*p;
     document.getElementById('good').textContent=o.good;
     document.getElementById('to').textContent='送到 '+o.place_name;
     document.getElementById('left').textContent=d.left+' 秒';
     document.getElementById('pay').textContent='+'+o.pay.toFixed(1);
-    document.getElementById('bar').style.width=Math.round(d.progress*100)+'%';
-    sc.style.left=x+'px'; sc.style.top='905px';
-    sc.style.transform=`translate(-50%,-100%) scaleX(${destX(o.place_name)>=STARTX?1:-1})`;
-    const dir = destX(o.place_name)>=STARTX ? 1 : -1;
-    LIGHT.style.left=(x+dir*54)+'px'; LIGHT.style.top='858px';
-    LIGHT.style.transform=dir>0?'scaleX(1)':'scaleX(-1)';
+    document.getElementById('bar').style.width=Math.round(p*100)+'%';
+    sc.style.left=x+'px'; sc.style.top=LANE_Y+'px';
+    const dir=tx>=START_X?1:-1;
+    sc.style.transform=`translate(-50%,-100%) scaleX(${dir})`;
+    LIGHT.style.left=(x+dir*58)+'px'; LIGHT.style.top=(LANE_Y-74)+'px';
+    LIGHT.style.transform=`scaleX(${dir})`;
     LIGHT.style.opacity=.9;
     if(o.seq!==lastSeq){lastSeq=o.seq;showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
   }else{
-    sc.style.left=STARTX+'px'; sc.style.top='905px'; sc.style.transform='translate(-50%,-100%)';
+    sc.style.left=START_X+'px'; sc.style.top=LANE_Y+'px'; sc.style.transform='translate(-50%,-100%)';
     LIGHT.style.opacity=0;
     document.getElementById('good').textContent='等单中';
     document.getElementById('to').textContent='—';

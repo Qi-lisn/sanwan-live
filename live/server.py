@@ -692,6 +692,10 @@ class H(SimpleHTTPRequestHandler):
                     delivery.rush(15)
                     with _lock:
                         _priority.append({"text": "加急 少十五秒", "comment": None})
+                if val >= 10:
+                    o2 = delivery.new_order(place="mall")
+                    with _lock:
+                        _priority.append({"text": f"大单 送{o2['place_name']}", "comment": None})
                 if behavior.auto_allowed() and time.time() - _gift_act["t"] > GIFT_ACTION_COOLDOWN:
                     _gift_act["t"] = time.time()
                     try:

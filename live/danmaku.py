@@ -104,14 +104,7 @@ class Fetcher(DouyinLiveWebFetcher):
             name = m.gift.name
             cnt = m.combo_count
             log(f"(礼物) {nick} {name}x{cnt}")
-            try:
-                req = urllib.request.Request("http://127.0.0.1:8765/tip",
-                    data=json.dumps({"nick": nick, "gift": name, "count": int(cnt or 1),
-                                     "value": int(getattr(m.gift, "diamond_count", 0) or 0) * int(cnt or 1)}, ensure_ascii=False).encode(),
-                    headers={"Content-Type": "application/json"})
-                urllib.request.urlopen(req, timeout=4).read()
-            except Exception as e:
-                log(f"  tip err {e}")
+            send_tip(nick, name, int(cnt or 1), int(getattr(m.gift, "diamond_count", 0) or 0) * int(cnt or 1))
         except Exception:
             pass
 
@@ -139,12 +132,36 @@ def auto_room():
     return found[-1] if found else None
 
 
+def send_tip(nick, gift, count=1, value=0):
+    """统一礼物上报：真实礼物与 --sim-gift 走同一条路径。"""
+    try:
+        req = urllib.request.Request("http://127.0.0.1:8765/tip",
+            data=json.dumps({"nick": nick, "gift": gift, "count": count, "value": value},
+                            ensure_ascii=False).encode(),
+            headers={"Content-Type": "application/json"})
+        r = urllib.request.urlopen(req, timeout=4).read().decode()
+        log(f"  tip -> {r[:80]}")
+        return r
+    except Exception as e:
+        log(f"  tip err {e}")
+        return None
+
+
 def parse_room(arg):
     m = re.search(r"(\d{6,})", arg)
     return m.group(1) if m else None
 
 
 def main():
+    if len(sys.argv) >= 2 and sys.argv[1] == "--sim-gift":
+        # 用法: python3 live/danmaku.py --sim-gift 昵称 礼物 数量 单价
+        nick = sys.argv[2] if len(sys.argv) > 2 else "测试观众"
+        gift = sys.argv[3] if len(sys.argv) > 3 else "玫瑰"
+        cnt = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+        unit = int(sys.argv[5]) if len(sys.argv) > 5 else 1
+        out = send_tip(nick, gift, cnt, unit * cnt)
+        print(out or "failed")
+        return
     if len(sys.argv) < 2:
         print("need room id"); sys.exit(1)
     room = auto_room() if sys.argv[1] == "auto" else parse_room(sys.argv[1])

@@ -42,7 +42,7 @@ async function setVisible(obs, name, on) {
   while (true) {
     try {
       const d = await getDaypart();
-      const mapMode = !!d.map;
+      const mapMode = !!d.map || require('fs').existsSync('/tmp/map_override');
       await setVisible(obs, STAGE, !mapMode);
       await setVisible(obs, MAP, mapMode);
       if (d.id !== last) {

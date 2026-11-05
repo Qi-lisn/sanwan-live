@@ -36,3 +36,27 @@ def test_progress_monotonic():
 def test_places_have_coords():
     for p in delivery.PLACES:
         assert 0 < p["x"] < 1920 and 0 < p["y"] < 1080
+
+
+def test_rush_reduces_time():
+    delivery.new_order(now=1000)
+    before = delivery.snapshot(now=1001)["left"]
+    delivery.rush(15)
+    after = delivery.snapshot(now=1001)["left"]
+    assert after == before - 15
+
+
+def test_specified_place():
+    o = delivery.new_order(now=0, place="school")
+    assert o["place_name"] == "学校"
+    o2 = delivery.new_order(now=0, place="商场")
+    assert o2["place_name"] == "商场"
+
+
+def test_late_three_times_penalty():
+    for i in range(3):
+        o = delivery.new_order(now=0)
+        delivery.pickup(now=1)
+        delivery.deliver(now=o["limit"] + 50)
+    s = delivery.snapshot(now=1000)
+    assert s["late"] == 3 and s["wage"] == 0.8 and "差评" in s["rating"]

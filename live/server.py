@@ -616,8 +616,27 @@ class H(SimpleHTTPRequestHandler):
                     _tb.print_exc()
                 self.send_response(400); self.end_headers()
             return
-        if self.path == "/delivery/new":
-            o = delivery.new_order()
+        if self.path.startswith("/delivery/qa"):
+            from urllib.parse import urlparse, parse_qs
+            q = parse_qs(urlparse(self.path).query)
+            if (q.get("late") or ["0"])[0] == "3":
+                delivery.qa_force_late(3)
+            body = b'{"ok": true}'
+            self.send_response(200); self.send_header("Content-Type","application/json")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
+        if self.path.startswith("/delivery/new"):
+            from urllib.parse import urlparse, parse_qs
+            q = parse_qs(urlparse(self.path).query)
+            place = (q.get("place") or [None])[0]
+            if not place:
+                n = int(self.headers.get("Content-Length", 0) or 0)
+                if n:
+                    try:
+                        place = (json.loads(self.rfile.read(n)) or {}).get("place")
+                    except Exception:
+                        place = None
+            o = delivery.new_order(place=place)
             body = json.dumps({"ok": True, "order": o}, ensure_ascii=False).encode()
             self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
@@ -669,6 +688,10 @@ class H(SimpleHTTPRequestHandler):
                                          "gift": str(d.get("gift", ""))[:24],
                                          "count": cnt}
                     total = _sing["tips"]
+                if delivery.snapshot()["status"] in ("accepted", "carrying"):
+                    delivery.rush(15)
+                    with _lock:
+                        _priority.append({"text": "加急 少十五秒", "comment": None})
                 if behavior.auto_allowed() and time.time() - _gift_act["t"] > GIFT_ACTION_COOLDOWN:
                     _gift_act["t"] = time.time()
                     try:

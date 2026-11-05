@@ -60,11 +60,7 @@ def room_ids():
 
 def danmaku_quiet_seconds():
     try:
-        lines = DANMAKU_LOG.read_text(errors="ignore").strip().splitlines()[-40:]
-        for ln in reversed(lines):
-            if "心跳" in ln or "连接成功" in ln:
-                return None
-        return 999
+        return time.time() - DANMAKU_LOG.stat().st_mtime
     except Exception:
         return None
 
@@ -95,8 +91,11 @@ def once():
     if not status["danmaku_proc"]:
         alert("弹幕进程不在")
     q = danmaku_quiet_seconds()
-    if q == 999:
-        alert("弹幕日志无心跳记录")
+    status["danmaku_log_age"] = round(q) if q is not None else None
+    if q is None:
+        alert("弹幕日志不存在")
+    elif q > 120:
+        alert(f"弹幕日志 {int(q)}s 没更新（可能断线）")
     age, lg = companion_fresh()
     status["companion_log_age"] = round(age) if age is not None else None
     if age is not None and age > 120:

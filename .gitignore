@@ -47,3 +47,7 @@ live2d/layers_v01/
 live2d/guides/*.png
 live2d/*.zip
 .joint-v03/
+live2d/v04_project/layers/
+live2d/v04_project/masks/
+live2d/v04_project/tests/
+live2d/v04_project/reference/*.png

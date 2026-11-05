@@ -1,0 +1,9 @@
+group,file,content,canvas,"bbox(x0,y0,x1,y1)",opaque_px,status
+20_body,00_remainder_UNFILLED.png,remainder（躯干+外套+裙+背包主体）,1052x1495,"141,0,906,1472",192944,需重新拆层
+70_face,09_head_upper.png,头部（含脸/眼/嘴/眉/前发/耳机上半）,1052x1495,"346,0,713,354",92089,需重新拆层
+50_arm_left,03_arm_free_screen_left.png,画面左臂整条袖子（无肘部分段）,1052x1495,"290,376,473,788",40260,需补绘+重新拆层
+50_arm_left,01_hand_free_screen_left.png,画面左手（张开手型）,1052x1495,"264,775,345,861",2758,需要精修
+30_arm_right,05_arm_holding_sleeve.png,画面右臂前臂衣袖（被玩偶遮挡）,1052x1495,"640,596,786,821",10088,需补绘
+30_arm_right,02_hand_holding_plush.png,抱玩偶的手,1052x1495,"573,511,666,594",5862,需要精修
+40_plush,04_plush_big.png,蓝色海豹玩偶（仅正面）,1052x1495,"520,328,829,725",74857,需补绘
+60_backpack,06_bag_charm.png,背包挂件（鱼玩偶+流苏）,1052x1495,"213,573,309,781",11577,可直接绑定

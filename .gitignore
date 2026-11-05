@@ -40,3 +40,7 @@ __pycache__/
 # 密钥
 .env
 *.env
+
+# Live2D 素材（二进制，走 LFS 或独立仓）
+live2d/layers_v01/
+.layer-draft/

@@ -5,9 +5,12 @@ html,body{height:100%;background:#05070d;overflow:hidden;font-family:"PingFang S
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;overflow:hidden}
 #bg,#lights{position:absolute;inset:0;width:1920px;height:1080px;object-fit:cover;user-select:none;-webkit-user-drag:none}
 #lights{mix-blend-mode:screen;animation:flicker 6s infinite ease-in-out}
+#bg,#bg2{transition:opacity .6s}
 @keyframes flicker{0%,100%{opacity:.85}23%{opacity:.95}41%{opacity:.72}57%{opacity:.9}73%{opacity:.8}}
 #vign{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(4,6,14,.45) 100%);pointer-events:none}
-#scooter{position:absolute;width:190px;height:126px;transform:translate(-50%,-100%);z-index:5;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+#scooter{position:absolute;width:230px;height:230px;transform:translate(-50%,-100%);z-index:5;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.5))}
+#scooter img{width:100%;height:100%;display:block}
 #light{position:absolute;width:360px;height:150px;transform-origin:0 50%;pointer-events:none;z-index:4;opacity:.9;
   background:radial-gradient(ellipse at 0 50%,rgba(255,226,160,.5),rgba(255,200,120,.14) 45%,transparent 72%);filter:blur(4px)}
 #hud{position:absolute;left:64px;top:46px;color:#e6ecff;z-index:6;text-shadow:0 2px 10px rgba(0,0,0,.6)}
@@ -32,7 +35,7 @@ html,body{height:100%;background:#05070d;overflow:hidden;font-family:"PingFang S
 #tag{position:absolute;left:64px;bottom:42px;font-size:18px;color:#9aa6cc;letter-spacing:4px;z-index:6;text-shadow:0 2px 8px rgba(0,0,0,.7)}
 </style></head><body>
 <div id="stage">
-  <img id="bg" src="street_bg.png" alt="">
+  <img id="bg" src="street_bg.jpg" alt="">
   <img id="lights" src="street_lights.png" alt="">
   <div id="vign"></div>
   <div id="light"></div>
@@ -62,19 +65,35 @@ const SHOPS={
 const START_X=265, LANE_Y=918;
 
 const sc=document.getElementById('scooter'), LIGHT=document.getElementById('light');
-sc.innerHTML=`<svg viewBox="0 0 150 100">
-  <ellipse cx="75" cy="94" rx="58" ry="8" fill="rgba(0,0,0,.45)"/>
-  <circle cx="34" cy="76" r="17" fill="#12172a" stroke="#4d5a86" stroke-width="4"/>
-  <circle cx="116" cy="76" r="17" fill="#12172a" stroke="#4d5a86" stroke-width="4"/>
-  <path d="M34 76 L70 52 L116 76" stroke="#e7ecff" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <rect x="52" y="18" width="46" height="34" rx="8" fill="#ffb648"/>
-  <rect x="58" y="24" width="34" height="9" rx="4" fill="#fff6da" opacity=".95"/>
-  <circle cx="80" cy="8" r="12" fill="#d7e3ff"/>
-  <path d="M62 52 L100 52" stroke="#8f9bc4" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="126" cy="66" r="4" fill="#fff2c8"/>
-</svg>`;
+sc.innerHTML=`<img id="riderImg" src="sprites/ride_1.png" alt="">`;
+
+const rideFrames=['sprites/ride_1.png','sprites/ride_2.png','sprites/ride_3.png'];
+const walkFrames=['sprites/walk_1.png','sprites/walk_2.png'];
+let fi=0, mode='ride', walkUntil=0;
+setInterval(()=>{
+  const img=document.getElementById('riderImg'); if(!img) return;
+  mode = Date.now() < walkUntil ? 'walk' : 'ride';
+  if(mode==='walk'){ img.src=walkFrames[fi%2]; fi++; }
+  else { img.src=rideFrames[fi%3]; fi++; }
+},140);
 
 let lastSeq=-1, lastStatus='';
+let curLight='night';
+async function loadBg(){
+  try{
+    const d=await (await fetch('/daypart',{cache:'no-store'})).json();
+    const map={day:'street_bg_day.jpg', dusk:'street_bg_dusk.jpg', warm:'street_bg.jpg', dark:'street_bg.jpg', black:'street_bg.jpg'};
+    const forced=new URLSearchParams(location.search).get('bg');
+    const src=forced?('street_bg_'+forced+'.jpg'):(map[d.light]||'street_bg.jpg');
+    if(src!==curLight){
+      const b=document.getElementById('bg');
+      if(b.getAttribute('src')!==src){ b.style.opacity=0; setTimeout(()=>{b.src=src; b.style.opacity=1;},200); }
+      curLight=src;
+      document.getElementById('badge').textContent=`${d.name} · 外卖专线`;
+    }
+  }catch(e){}
+}
+loadBg(); setInterval(loadBg,30000);
 function showMsg(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>m.style.opacity=0,4200)}
 
 async function tick(){
@@ -94,7 +113,7 @@ async function tick(){
     LIGHT.style.left=(x+dir*58)+'px'; LIGHT.style.top=(LANE_Y-74)+'px';
     LIGHT.style.transform=`scaleX(${dir})`;
     LIGHT.style.opacity=.9;
-    if(o.seq!==lastSeq){lastSeq=o.seq;showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
+    if(o.seq!==lastSeq){lastSeq=o.seq;mode='ride';showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
   }else{
     sc.style.left=START_X+'px'; sc.style.top=LANE_Y+'px'; sc.style.transform='translate(-50%,-100%)';
     LIGHT.style.opacity=0;
@@ -103,7 +122,7 @@ async function tick(){
     document.getElementById('left').textContent='—';
     document.getElementById('pay').textContent='—';
     document.getElementById('bar').style.width='0%';
-    if(lastStatus!=='idle'&&d.last_result)showMsg(d.last_result);
+    if(lastStatus!=='idle'&&d.last_result){showMsg(d.last_result); mode='walk'; walkUntil=Date.now()+2600;}
   }
   lastStatus=d.status;
 }

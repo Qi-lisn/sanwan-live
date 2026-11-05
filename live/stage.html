@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>三万直播间</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b1020; }
+  #stage {
+    position:absolute; left:50%; top:50%;
+    width:1080px; height:1920px;
+    transform:translate(-50%,-50%);
+    transform-origin:center;
+    overflow:hidden;
+    background:linear-gradient(180deg,#96ceff 0%,#cfeaff 45%,#fff6e8 100%);
+    font-family:"Hiragino Sans GB","PingFang SC",sans-serif;
+  }
+  .sun { position:absolute; width:1200px; height:1200px; left:640px; top:-620px;
+         background:radial-gradient(circle,rgba(255,228,160,.95) 0%,rgba(255,236,190,.45) 38%,rgba(255,255,255,0) 70%);
+         filter:blur(6px); }
+  .bubble { position:absolute; border-radius:50%; background:rgba(255,255,255,.55);
+            border:2px solid rgba(255,255,255,.8); animation:rise linear infinite; }
+  @keyframes rise { from { transform:translateY(0);} to { transform:translateY(-2100px);} }
+  #hero { position:absolute; left:50%; bottom:250px; width:820px; transform:translateX(-50%);
+          animation:bob 4.2s ease-in-out infinite; filter:drop-shadow(0 18px 24px rgba(40,70,130,.22)); }
+  @keyframes bob { 0%,100%{ transform:translate(-50%,0);} 50%{ transform:translate(-50%,-16px);} }
+  #shadow { position:absolute; left:50%; bottom:238px; width:520px; height:70px;
+            transform:translateX(-50%); background:radial-gradient(ellipse,rgba(40,62,110,.28),rgba(40,62,110,0) 70%);
+            filter:blur(6px); }
+  #caption { position:absolute; left:0; right:0; bottom:120px; padding:0 90px; text-align:center;
+             font-size:62px; line-height:1.4; color:#182c54; opacity:0; transition:opacity .25s ease;
+             text-shadow:0 0 2px #fff,0 0 2px #fff,2px 0 0 #fff,-2px 0 0 #fff,0 2px 0 #fff,0 -2px 0 #fff; }
+  #caption.on { opacity:1; }
+  #badge { position:absolute; left:40px; top:40px; padding:14px 26px; border-radius:999px;
+           background:rgba(255,255,255,.72); color:#1b3358; font-size:30px; letter-spacing:1px; }
+  #status { position:absolute; right:40px; top:40px; font-size:24px; color:#1b3358; opacity:.55; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="sun"></div>
+  <div id="bubbles"></div>
+  <div id="shadow"></div>
+  <img id="hero" src="character.png" alt="">
+  <div id="caption"></div>
+  <div id="badge">AI 数字人 · 虚拟形象</div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+function fit() {
+  const s = Math.min(window.innerWidth/1080, window.innerHeight/1920);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize', fit); fit();
+
+// 气泡
+const wrap = document.getElementById('bubbles');
+for (let i=0;i<26;i++){
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const r = 6 + Math.random()*30;
+  b.style.width = b.style.height = r*2+'px';
+  b.style.left = Math.random()*1080+'px';
+  b.style.top = (1400 + Math.random()*700)+'px';
+  b.style.opacity = 0.25 + Math.random()*0.5;
+  b.style.animationDuration = (14 + Math.random()*16)+'s';
+  b.style.animationDelay = (-Math.random()*20)+'s';
+  wrap.appendChild(b);
+}
+
+const cap = document.getElementById('caption');
+const statusEl = document.getElementById('status');
+let audio = null;
+let speaking = false;
+
+window.setCaption = (t) => {
+  if (!t) { cap.classList.remove('on'); return; }
+  cap.textContent = t;
+  cap.classList.add('on');
+};
+
+window.speaking = false;
+window.speak = (text) => new Promise(async (resolve) => {
+  if (window.speaking) { resolve(false); return; }
+  window.speaking = true;
+  try {
+    const r = await fetch('/say', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    window.setCaption(d.text);
+    audio = new Audio(d.url);
+    await new Promise(res => {
+      audio.onended = res;
+      audio.onerror = res;
+      audio.play().catch(res);
+    });
+    window.setCaption('');
+    window.speaking = false;
+    resolve(true);
+  } catch (e) {
+    console.error(e);
+    window.speaking = false;
+    resolve(false);
+  }
+});
+</script>
+</body>
+</html>

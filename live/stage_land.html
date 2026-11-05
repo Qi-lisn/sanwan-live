@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>三万直播间</title>
+<style>
+  #bg { position:absolute; inset:0; background:url('bg.jpg') center/cover no-repeat; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b1020; }
+  #stage {
+    position:absolute; left:50%; top:50%;
+    width:1920px; height:1080px;
+    transform:translate(-50%,-50%);
+    transform-origin:center;
+    overflow:hidden;
+    background:#1a1630;
+    font-family:"Hiragino Sans GB","PingFang SC",sans-serif;
+  }
+  .sun { position:absolute; width:1200px; height:1200px; left:640px; top:-620px;
+         background:radial-gradient(circle,rgba(255,228,160,.95) 0%,rgba(255,236,190,.45) 38%,rgba(255,255,255,0) 70%);
+         filter:blur(6px); }
+  .bubble { display:none; position:absolute; border-radius:50%; background:rgba(255,255,255,.55);
+            border:2px solid rgba(255,255,255,.8); animation:rise linear infinite; }
+  @keyframes rise { from { transform:translateY(0);} to { transform:translateY(-2100px);} }
+  #hero { position:absolute; left:700px; bottom:352px; width:600px;
+          animation:bob 4.2s ease-in-out infinite; filter:drop-shadow(0 14px 22px rgba(50,35,80,.28)); }
+  @keyframes bob { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+  #shadow { position:absolute; left:760px; bottom:346px; width:400px; height:44px;
+            background:radial-gradient(ellipse,rgba(40,30,70,.35),rgba(40,30,70,0) 70%); filter:blur(7px); }
+  #caption { position:absolute; left:50%; bottom:70px; transform:translateX(-50%);
+             display:inline-block; max-width:1560px; padding:16px 44px; border-radius:26px;
+             background:rgba(255,255,255,.74); backdrop-filter:blur(4px);
+             text-align:center; font-size:58px; line-height:1.35; color:#182c54; opacity:0; transition:opacity .25s ease;
+             text-shadow:0 0 2px #fff,0 0 2px #fff,2px 0 0 #fff,-2px 0 0 #fff,0 2px 0 #fff,0 -2px 0 #fff; }
+  #caption.on { opacity:1; }
+  #desk { position:absolute; left:70px; top:300px; width:430px; }
+  .screen { background:#0d1a33; border:6px solid #17233d; border-radius:14px; padding:20px 24px;
+            box-shadow:0 18px 40px rgba(20,40,80,.25); color:#cfe3ff; }
+  .badge2 { font-size:20px; color:#7fb0ff; letter-spacing:.5px; }
+  .todo { margin-top:14px; font-size:18px; color:#8fb6ee; }
+  .screen ul { margin:8px 0 0 0; padding-left:22px; font-size:20px; line-height:1.7; }
+  .screen .st { margin-top:12px; font-size:34px; color:#9ee6c0; }
+  .stand { width:120px; height:18px; background:#17233d; margin:0 auto; border-radius:0 0 8px 8px; }
+  #statuschip { position:absolute; left:44px; top:178px; background:rgba(255,255,255,.82); color:#1b3358;
+             font-size:26px; padding:10px 22px; border-radius:999px; }
+  #theme { position:absolute; left:44px; top:118px; background:rgba(255,214,102,.92); color:#3a2c00;
+           font-size:28px; padding:10px 24px; border-radius:999px; }
+  #hud { position:absolute; right:60px; top:40px; display:flex; gap:14px; font-size:26px; color:#1b3358; }
+  #hud .pill { background:rgba(255,255,255,.7); border-radius:999px; padding:10px 22px; }
+  #bubble { position:absolute; left:50%; bottom:360px; transform:translateX(-50%) translateY(10px);
+            background:rgba(20,32,60,.85); color:#fff; font-size:40px; padding:18px 34px; border-radius:20px;
+            max-width:1300px; opacity:0; transition:all .25s ease; }
+  #bubble.on { opacity:1; transform:translateX(-50%) translateY(0); }
+  #badge { position:absolute; left:40px; top:40px; padding:14px 26px; border-radius:999px;
+           background:rgba(255,255,255,.72); color:#1b3358; font-size:30px; letter-spacing:1px; }
+  #status { position:absolute; right:40px; top:40px; font-size:24px; color:#1b3358; opacity:.55; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="bubbles"></div>
+  <div id="shadow"></div>
+  <img id="hero" src="character_waist.png" alt="">
+  <div id="caption"></div>
+  <div id="badge">AI 数字人 · 虚拟形象</div>
+  <div id="theme">工位 30000 · 夜班</div>
+  <div id="statuschip">摸鱼中</div>
+    <div class="stand"></div>
+  </div>
+  <div id="hud"></div>
+  <div id="bubble"></div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+function fit() {
+  const s = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize', fit); fit();
+
+// 气泡
+const wrap = document.getElementById('bubbles');
+for (let i=0;i<26;i++){
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const r = 6 + Math.random()*30;
+  b.style.width = b.style.height = r*2+'px';
+  b.style.left = Math.random()*1080+'px';
+  b.style.top = (1400 + Math.random()*700)+'px';
+  b.style.opacity = 0.25 + Math.random()*0.5;
+  b.style.animationDuration = (14 + Math.random()*16)+'s';
+  b.style.animationDelay = (-Math.random()*20)+'s';
+  wrap.appendChild(b);
+}
+
+const cap = document.getElementById('caption');
+const statusEl = document.getElementById('status');
+let audio = null;
+let speaking = false;
+
+window.setCaption = (t) => {
+  if (!t) { cap.classList.remove('on'); return; }
+  cap.textContent = t;
+  cap.classList.add('on');
+};
+
+window.speaking = false;
+
+let lastSeq = -1;
+async function captionLoop() {
+  try {
+    const r = await fetch('/caption');
+    const d = await r.json();
+    if (d.seq !== lastSeq) {
+      lastSeq = d.seq;
+      console.log('CAP', d.seq, d.text);
+      window.setCaption(d.text || '');
+      const b = document.getElementById('bubble');
+      if (d.comment && d.text) { b.textContent = '@' + d.comment.nick + '：' + d.comment.text; b.classList.add('on'); }
+      else { b.classList.remove('on'); }
+    }
+  } catch (e) {}
+  setTimeout(captionLoop, 250);
+}
+let statSeq = -1;
+async function statsLoop() {
+  try {
+    const r = await fetch('/stats');
+    const d = await r.json();
+    const m = Math.floor(d.uptime / 60), sec = d.uptime % 60;
+    document.getElementById('hud').innerHTML =
+      `<div class="pill">工时 ${m}:${String(sec).padStart(2,'0')}</div>` +
+      `<div class="pill">摸了 ${d.moyu} 次</div>` +
+      `<div class="pill">被抓 ${d.caught} 次</div>`;
+    const st = document.getElementById('statuschip');
+    if (st && d.status) st.textContent = d.status;
+
+  } catch (e) {}
+  setTimeout(statsLoop, 1000);
+}
+window.addEventListener('load', () => { setTimeout(captionLoop, 600); setTimeout(statsLoop, 800); });
+</script>
+</body>
+</html>

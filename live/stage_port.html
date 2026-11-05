@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><title>三万夜班电台</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0b1020}
+  #stage{position:absolute;left:50%;top:50%;width:1080px;height:1920px;transform:translate(-50%,-50%);
+    transform-origin:center;overflow:hidden;background:#1b1633;font-family:"Hiragino Sans GB","PingFang SC",sans-serif}
+  #scene{position:absolute;left:0;top:0;width:1080px;height:1400px;overflow:hidden}
+  #bg{position:absolute;inset:0;background:url('bg.jpg') center 32%/cover no-repeat}
+  #ground{position:absolute;left:50%;bottom:10px;width:520px;height:70px;transform:translateX(-50%);
+        background:radial-gradient(ellipse,rgba(30,20,50,.45),rgba(30,20,50,0) 70%);filter:blur(8px)}
+  #fade{position:absolute;left:0;right:0;top:1240px;height:200px;
+        background:linear-gradient(180deg,rgba(27,22,51,0) 0%,#1b1633 100%)}
+  #heroWrap{position:absolute;left:50%;bottom:26px;width:700px;transform:translateX(-50%);
+        transform-origin:50% 100%;animation:sway 11s ease-in-out infinite}
+  #heroBob{position:relative;width:100%;transform-origin:50% 100%;animation:breathe 5.4s ease-in-out infinite, look 23s ease-in-out infinite}
+  #blink,#mouth{position:absolute;inset:0;width:100%;opacity:0;transition:opacity .06s linear}
+  #hero{width:100%;display:block;filter:drop-shadow(0 14px 26px rgba(20,10,40,.5))}
+  @keyframes sway{0%,100%{transform:translateX(-50%) rotate(-.6deg)}50%{transform:translateX(-50%) rotate(.6deg)}}
+  @keyframes breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.012)}}
+  @keyframes look{0%,88%,100%{transform:translateY(0) scaleY(1)}93%{transform:translateY(4px) scaleY(.996)}}
+  
+  #topbar{position:absolute;left:180px;right:180px;top:120px;display:flex;justify-content:space-between;
+          align-items:center;color:#fff;font-size:30px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+  #topbar .right{font-size:26px;opacity:.92}
+  #panel{position:absolute;left:0;top:1400px;width:1080px;height:520px;padding:44px 64px}
+  #kicker{font-size:24px;text-align:center;letter-spacing:.22em;color:#9d8fc4}
+  #bubble{position:absolute;left:170px;right:170px;top:1400px;text-align:center;background:rgba(255,255,255,.94);color:#241c3d;
+          font-size:32px;padding:18px 28px;border-radius:18px;opacity:0;transition:opacity .25s ease}
+  #bubble.on{opacity:1}
+  #caption{position:absolute;left:170px;right:170px;top:1490px;text-align:center;color:#f6ecd2;font-size:56px;line-height:1.32;
+           opacity:0;transition:opacity .25s ease}
+  #caption.on{opacity:1}
+  #hud{position:absolute;left:170px;right:170px;bottom:96px;display:flex;gap:14px;justify-content:center;color:#cfc3ea;font-size:26px}
+  #hud .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:10px 22px}
+  #footer{position:absolute;left:170px;right:170px;bottom:52px;justify-content:center;gap:40px;color:#7f72a3;font-size:22px;display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="scene">
+    <div id="bg"></div>
+    <div id="heroWrap"><div id="heroBob"><img id="hero" src="character_v3.png" alt=""><img id="blink" src="blink2.png" alt=""><img id="mouth" src="mouth_open.png" alt=""></div></div>
+    <div id="ground"></div>
+    <div id="fade"></div>
+    <div id="topbar"><div>三万夜班电台</div><div class="right">AI 虚拟主播</div></div>
+  </div>
+  <div id="panel">
+    <div id="kicker">NIGHT SHIFT / LIVE</div>
+  </div>
+  <div id="bubble"></div>
+  <div id="caption"></div>
+  <div id="hud"></div>
+  <div id="footer"><span>工位 30000</span><span>直播中</span></div>
+</div>
+<script>
+const stage=document.getElementById('stage');
+function fit(){const s=Math.min(window.innerWidth/1080,window.innerHeight/1920);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+window.addEventListener('resize',fit);fit();
+const cap=document.getElementById('caption');
+window.setCaption=t=>{if(!t){cap.classList.remove('on');return}cap.textContent=t;cap.classList.add('on')};
+let lastSeq=-1;
+async function captionLoop(){
+  try{const r=await fetch('/caption');const d=await r.json();
+    if(d.seq!==lastSeq){lastSeq=d.seq;window.setCaption(d.text||'')}}catch(e){}
+  setTimeout(captionLoop,250);
+}
+let statSeq=-1;
+async function statsLoop(){
+  try{const r=await fetch('/stats');const d=await r.json();
+    const m=Math.floor(d.uptime/60),sec=d.uptime%60;
+    document.getElementById('hud').innerHTML=
+      `<div class="pill">工时 ${m}:${String(sec).padStart(2,'0')}</div>`+
+      `<div class="pill">摸了 ${d.moyu} 次</div>`+
+      `<div class="pill">被抓 ${d.caught} 次</div>`;
+    if(d.comment&&d.comment.seq>statSeq&&d.comment.text){statSeq=d.comment.seq;
+      const b=document.getElementById('bubble');b.textContent='@'+d.comment.nick+'：'+d.comment.text;
+      b.classList.add('on');setTimeout(()=>b.classList.remove('on'),4200)}
+  }catch(e){}
+  setTimeout(statsLoop,1000);
+}
+window.addEventListener('load',()=>{setTimeout(captionLoop,600);setTimeout(statsLoop,800);
+  const bl=document.getElementById('blink');
+  const mo=document.getElementById('mouth');
+  (function mouthLoop(){
+    const speaking = cap.classList.contains('on');
+    mo.style.opacity = speaking && (Math.floor(Date.now()/110)%2===0) ? 1 : 0;
+    setTimeout(mouthLoop, 90);
+  })();
+  (function blinkLoop(){
+    const wait=2800+Math.random()*4200;
+    setTimeout(()=>{bl.style.opacity=1;setTimeout(()=>{bl.style.opacity=0;blinkLoop()},115)}, wait);
+  })();
+});
+</script>
+</body>
+</html>

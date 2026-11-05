@@ -1,0 +1,34 @@
+# 依赖
+node_modules/
+.npm-cache/
+vendor/
+.venv/
+.uv-cache/
+.uv-python/
+
+# 参考项目 / 第三方
+.ref-seed-vc/
+.ref-dsh-live-pet/
+live/vendor/douyin_fetcher/
+live/live2d/
+
+# 数据与素材（体积大 / 版权）
+train/
+out/
+live/cache/
+live/songs/*.mp3
+live/*.wav
+*.dmg
+*.zip
+
+# 运行态
+.douyin-profile/
+.dy-viewer/
+.live-profile/
+__pycache__/
+*.log
+.DS_Store
+
+# 密钥
+.env
+*.env

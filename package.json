@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "obs-websocket-js": "^5.0.8",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^6.5.10",
+    "playwright-core": "^1.64.1"
+  }
+}

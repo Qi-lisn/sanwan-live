@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>三万 · 回话</title>
+<style>
+body{font-family:-apple-system,"Hiragino Sans GB";background:#0f1729;color:#e8eefc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.box{width:420px;background:#182238;border-radius:16px;padding:28px}
+h1{font-size:18px;margin:0 0 18px;font-weight:600}
+label{display:block;font-size:12px;color:#8fa3c8;margin:14px 0 6px}
+input{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #2b3a5a;background:#0f1729;color:#fff;font-size:15px}
+button{width:100%;margin-top:20px;padding:12px;border:0;border-radius:10px;background:#3b82f6;color:#fff;font-size:15px;cursor:pointer}
+button:active{opacity:.8}
+#msg{margin-top:14px;font-size:13px;color:#8fa3c8;min-height:20px}
+</style></head><body>
+<div class="box">
+  <h1>有人打招呼？填进来</h1>
+  <label>昵称</label>
+  <input id="nick" placeholder="比如 小鱼" autofocus>
+  <label>他说了什么</label>
+  <input id="text" placeholder="你好呀">
+  <button onclick="send()">让三万回一句</button>
+  <div id="msg"></div>
+</div>
+<script>
+async function send(){
+  const nick=document.getElementById('nick').value.trim()||'观众';
+  const text=document.getElementById('text').value.trim()||'你好';
+  const r=await fetch('/comment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,text})});
+  const d=await r.json();
+  document.getElementById('msg').textContent = d.replied ? '已排进队列，下一句就说' : '这条没匹配到招呼词，没回';
+  document.getElementById('text').value='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+</script></body></html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><title>三万 · Live2D</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0b1020}
+  #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%);
+    transform-origin:center;overflow:hidden;font-family:"Hiragino Sans GB","PingFang SC",sans-serif}
+  #bg{position:absolute;inset:0;background:url('bg.jpg') center/cover no-repeat}
+  #vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,rgba(0,0,0,0) 40%,rgba(10,8,24,.5) 100%)}
+  #cvs{position:absolute;inset:0}
+  #topbar{position:absolute;left:90px;right:90px;top:60px;display:flex;justify-content:space-between;color:#fff;font-size:30px;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  #topbar .right{opacity:.9;font-size:26px}
+  #hud{position:absolute;right:90px;top:130px;display:flex;gap:12px;color:#e6dcff;font-size:24px}
+  #hud .pill{background:rgba(20,16,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:9px 20px}
+  #bubble{position:absolute;left:50%;bottom:300px;transform:translateX(-50%);max-width:1200px;background:rgba(255,255,255,.94);color:#241c3d;font-size:34px;padding:16px 30px;border-radius:18px;opacity:0;transition:opacity .2s}
+  #bubble.on{opacity:1}
+  #caption{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);max-width:1300px;width:max-content;padding:16px 44px;border-radius:22px;background:rgba(20,16,40,.82);text-align:center;font-size:52px;line-height:1.3;color:#f6ecd2;opacity:0;transition:opacity .2s}
+  #caption.on{opacity:1}
+  #kicker{position:absolute;left:90px;bottom:52px;font-size:22px;letter-spacing:.2em;color:#9d8fc4}
+  #foot{position:absolute;right:90px;bottom:52px;font-size:22px;color:#7f72a3}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="vig"></div>
+  <canvas id="cvs"></canvas>
+  <div id="topbar"><div>三万夜班电台</div><div class="right">AI 虚拟主播</div></div>
+  <div id="hud"></div>
+  <div id="bubble"></div>
+  <div id="caption"></div>
+  <div id="kicker">NIGHT SHIFT / LIVE</div>
+  <div id="foot">工位 30000 · 直播中</div>
+</div>
+<script src="live2d/vendor/live2dcubismcore.min.js"></script>
+<script src="live2d/vendor/pixi.min.js"></script>
+<script src="live2d/vendor/cubism4.min.js"></script>
+<script>
+const stage=document.getElementById('stage');
+function fit(){const s=Math.min(window.innerWidth/1920,window.innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+window.addEventListener('resize',fit);fit();
+
+const cap=document.getElementById('caption');
+window.setCaption=t=>{if(!t){cap.classList.remove('on');return}cap.textContent=t;cap.classList.add('on')};
+
+const app=new PIXI.Application({view:document.getElementById('cvs'),width:1920,height:1080,transparent:true,antialias:true,autoDensity:true,resolution:1});
+let model=null, cm=null;
+PIXI.live2d.Live2DModel.from('live2d/Hiyori/Hiyori.model3.json',{autoInteract:false}).then(m=>{
+  model=m; cm=m.internalModel.coreModel;
+  app.stage.addChild(m);
+  const s=980/m.height;
+  m.scale.set(s); m.anchor.set(0.5,1);
+  m.x=960; m.y=1060;
+  m.motion('Idle');
+  window.__ready=true;
+}).catch(e=>{console.error(e); window.__err=String(e);});
+
+let level=0, blinkT=0, nextBlink=performance.now()+3000;
+async function stateLoop(){
+  try{
+    const r=await fetch('/caption'); const d=await r.json();
+    level=d.level||0;
+    window.setCaption(d.text||'');
+  }catch(e){}
+  setTimeout(stateLoop,120);
+}
+async function statsLoop(){
+  try{
+    const r=await fetch('/stats'); const d=await r.json();
+    const m=Math.floor(d.uptime/60),sec=d.uptime%60;
+    document.getElementById('hud').innerHTML=
+      `<div class="pill">工时 ${m}:${String(sec).padStart(2,'0')}</div>`+
+      `<div class="pill">摸了 ${d.moyu} 次</div>`+
+      `<div class="pill">被抓 ${d.caught} 次</div>`;
+    if(d.comment&&d.comment.seq>(window.__cs||0)&&d.comment.text){
+      window.__cs=d.comment.seq;
+      const b=document.getElementById('bubble');b.textContent='@'+d.comment.nick+'：'+d.comment.text;
+      b.classList.add('on');setTimeout(()=>b.classList.remove('on'),4200);
+    }
+  }catch(e){}
+  setTimeout(statsLoop,1000);
+}
+function tick(){
+  if(cm){
+    const t=performance.now()/1000;
+    const mouth=Math.min(1,level*(0.7+0.3*Math.abs(Math.sin(t*11))));
+    try{
+      cm.setParameterValueById('ParamMouthOpenY', mouth);
+      cm.setParameterValueById('ParamAngleX', Math.sin(t*0.6)*8);
+      cm.setParameterValueById('ParamBodyAngleX', Math.sin(t*0.4)*5);
+      cm.setParameterValueById('ParamBreath', (Math.sin(t*1.4)+1)/2);
+      const now=performance.now();
+      if(now>nextBlink){nextBlink=now+2800+Math.random()*4200;blinkT=now+120;}
+      const closed=now<blinkT?0:1;
+      cm.setParameterValueById('ParamEyeLOpen', closed);
+      cm.setParameterValueById('ParamEyeROpen', closed);
+    }catch(e){}
+  }
+  requestAnimationFrame(tick);
+}
+window.addEventListener('load',()=>{setTimeout(stateLoop,500);setTimeout(statsLoop,600);tick();});
+</script>
+</body>
+</html>

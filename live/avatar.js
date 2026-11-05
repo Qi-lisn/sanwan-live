@@ -23,8 +23,10 @@
     @keyframes sanwanNod {to{transform:translateY(6px) rotate(-1deg)}}
     @keyframes sanwanLaugh {to{transform:translateY(-10px) scale(1.015)}}
     @keyframes sanwanDance {to{transform:rotate(5deg) translateY(-14px) scale(1.02)}}
+    #heroBob{transition:opacity .12s linear}
     .sanwan-clip{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-      height:100%;width:auto;max-width:none;object-fit:contain;display:none;z-index:3;pointer-events:none}
+      width:100%;height:auto;max-width:none;display:none;opacity:0;z-index:3;
+      pointer-events:none;transition:opacity .12s linear}
   `;
   document.head.appendChild(style);
 
@@ -37,7 +39,12 @@
 
   function showHero() {
     const bob = document.getElementById('heroBob');
-    if (bob) bob.style.visibility = '';
+    if (bob) { bob.style.visibility = ''; bob.style.opacity = ''; }
+  }
+
+  function hideHero() {
+    const bob = document.getElementById('heroBob');
+    if (bob) bob.style.opacity = '0';
   }
 
   function getClip(name) {
@@ -69,6 +76,7 @@
       const v = clips[n];
       try { v.pause(); } catch (_) {}
       v.style.display = 'none';
+      v.style.opacity = '0';
     });
     current = null;
     wrap.classList.remove('sanwan-happy', 'sanwan-shy', 'sanwan-nod', 'sanwan-laugh',
@@ -85,10 +93,9 @@
   function playClip(name, duration) {
     reset();
     const v = getClip(name);
-    const bob = document.getElementById('heroBob');
-    v.style.height = ((bob && bob.offsetHeight) || 900) + 'px';
     v.style.display = 'block';
-    if (bob) bob.style.visibility = 'hidden';
+    requestAnimationFrame(() => { v.style.opacity = '1'; });
+    hideHero();
     current = name;
     try { v.currentTime = 0; } catch (_) {}
     const p = v.play();

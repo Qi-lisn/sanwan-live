@@ -9,6 +9,7 @@ vendor/
 # 升级包 / 素材测试包解压目录
 .dance-pkg/
 .motion-pkg/
+.motion-v02/
 .upgrade/
 
 # 参考项目 / 第三方

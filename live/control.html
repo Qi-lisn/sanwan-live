@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>三万 · 直播控制台</title>
+<style>
+:root{color-scheme:dark;font:15px/1.55 system-ui,-apple-system,'Microsoft YaHei',sans-serif;background:#0c1020;color:#e9edf9}
+*{box-sizing:border-box}body{margin:0;padding:28px;max-width:1120px;margin:auto}h1{font-size:25px;margin:0 0 6px}.muted{color:#a3aec9}.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}.card{background:#171f33;border:1px solid #303b56;border-radius:16px;padding:20px}.card h2{font-size:17px;margin:0 0 14px}button{cursor:pointer;border:1px solid #526181;background:#293650;color:#fff;border-radius:9px;padding:10px 16px;margin:4px;font:inherit}button:hover{background:#394c75}button.warn{background:#653740;border-color:#9b5263}.flag{display:flex;align-items:center;gap:10px;margin:14px 0}input[type=checkbox]{width:18px;height:18px}code{color:#90ceff}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{padding:13px;border-radius:10px;background:#242f48}.stat b{display:block;font-size:18px}#events{max-height:310px;overflow:auto;font-size:13px}.event{padding:8px 0;border-bottom:1px solid #303b56}#feedback{min-height:24px;color:#9bdfbd}a{color:#9acbff}@media(max-width:750px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}body{padding:14px}}
+</style></head><body>
+<h1>三万大肥鱼 · 直播控制台</h1><div class="muted">本机运维面板 · 保留原有点歌台和弹幕接口 · 自动动作默认关闭</div>
+<div class="layout"><section class="card"><h2>直播状态</h2><div class="stats"><div class="stat">播放状态<b id="activity">—</b></div><div class="stat">角色动作<b id="motion">—</b></div><div class="stat">回复数<b id="replies">—</b></div></div>
+<div class="stats" style="margin-top:12px"><div class="stat">正在唱<b id="song">—</b></div><div class="stat">今日收入<b id="money">—</b></div><div class="stat">点歌队列<b id="queue">—</b></div></div><p id="feedback"></p><button onclick="send('idle')" class="warn">立即停止动作</button><a href="/stage_sing.html" target="_blank" rel="noreferrer">打开直播舞台</a></section>
+<section class="card"><h2>系统开关</h2><label class="flag"><input id="enabled" type="checkbox" onchange="setFlag(this)">启用动作系统</label><label class="flag"><input id="auto_actions" type="checkbox" onchange="setFlag(this)">自动响应弹幕动作</label><label class="flag"><input id="paused" type="checkbox" onchange="setFlag(this)">暂停全部角色动作</label><p class="muted">暂停只影响动作，不会停止原有 TTS、唱歌或推流；紧急停播仍需在 OBS / 直播伴侣操作。</p></section>
+<section class="card"><h2>手动动作彩排</h2><button onclick="send('wave')">挥手</button><button onclick="send('happy')">开心</button><button onclick="send('shy')">害羞</button><button onclick="send('nod')">点头</button><button onclick="send('laugh')">笑</button><button onclick="send('dance_cute')">跳舞</button><p class="muted">跳舞需在 <code>live/motions/dance_cute.webm</code> 放置授权透明视频。否则仅播放整图摇摆示意。</p></section>
+<section class="card"><h2>最近动作记录</h2><div id="events">暂无动作</div></section></div>
+<script>
+let refreshing=false;
+async function request(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||d.ok===false)throw Error(d.error||d.reason||'请求失败');return d}
+async function send(name){try{await request('/action',{name});document.getElementById('feedback').textContent='已提交动作：'+name}catch(e){document.getElementById('feedback').textContent=e.message}refresh()}
+async function setFlag(input){try{await request('/control',{[input.id]:input.checked})}catch(e){document.getElementById('feedback').textContent=e.message}refresh()}
+async function refresh(){if(refreshing)return;refreshing=true;try{const [a,s,g]=await Promise.all([fetch('/action_state').then(r=>r.json()),fetch('/stats').then(r=>r.json()),fetch('/sing_state').then(r=>r.json()).catch(()=>({}))]);
+document.getElementById('song').textContent=(g.title||'—').replace('（三万翻唱）','');
+document.getElementById('money').textContent='¥'+(((g.coins||0)/10).toFixed(1))+' · '+(g.tips||0)+' 次';
+document.getElementById('queue').textContent=(g.queue&&g.queue.length)?g.queue.length+' 首':'空';
+for(const k of ['enabled','auto_actions','paused'])document.getElementById(k).checked=!!a[k];
+document.getElementById('activity').textContent=a.activity;document.getElementById('motion').textContent=a.motion;document.getElementById('replies').textContent=s.replies;
+const events=document.getElementById('events');events.replaceChildren();for(const e of [...a.recent].reverse()){const div=document.createElement('div');div.className='event';div.textContent=new Date(e.at*1000).toLocaleTimeString()+' · '+e.name+' · '+e.source;events.appendChild(div)}
+}catch(e){document.getElementById('feedback').textContent='控制台暂时无法连接后端：'+e.message}finally{refreshing=false}}
+refresh();setInterval(refresh,1000);
+</script></body></html>

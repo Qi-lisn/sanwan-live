@@ -34,6 +34,15 @@ docs/           Live2D 需求书等文档
 assets/         立绘与图层
 ```
 
+## V1 动作系统与控制台
+
+- 控制台：`http://127.0.0.1:8765/control.html`（本机运维用，别暴露到公网）
+- 动作：`wave` 挥手 / `happy` 开心 / `shy` 害羞 / `nod` 点头 / `laugh` 笑 / `dance_cute` 跳舞
+- 接口：`GET /action_state`、`POST /action {"name":"wave"}`、`POST /control {"auto_actions":true}`
+- 自动动作默认**关闭**；打开后弹幕含「跳个舞 / 挥手 / 可爱」会触发，带冷却
+- 跳舞需要 `live/motions/dance_cute.webm`（透明背景），没有时退回整图摇摆示意
+- `paused` 只停角色动作，不停 TTS、唱歌和推流
+
 ## 跑起来
 
 1. 安装依赖

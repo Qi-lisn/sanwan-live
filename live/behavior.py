@@ -1,0 +1,101 @@
+"""Sanwan live action controller. No external dependencies; loopback HTTP exposed by server.py."""
+import collections
+import threading
+import time
+
+ALLOWED = {
+    'wave': {'duration': 2.5, 'kind': 'gesture'},
+    'happy': {'duration': 2.0, 'kind': 'expression'},
+    'shy': {'duration': 2.0, 'kind': 'expression'},
+    'nod': {'duration': 1.4, 'kind': 'gesture'},
+    'laugh': {'duration': 1.8, 'kind': 'expression'},
+    'dance_cute': {'duration': 8.0, 'kind': 'performance'},
+    'idle': {'duration': 0.0, 'kind': 'system'},
+}
+_lock = threading.RLock()
+_sequence = 0
+_history = collections.deque(maxlen=40)
+_state = {
+    'enabled': True, 'auto_actions': False, 'paused': False,
+    'activity': 'idle', 'motion': 'idle', 'motion_until': 0,
+    'last_action': None, 'last_source': None,
+}
+_last_auto = {}
+
+
+def _expire():
+    if _state['motion_until'] and time.monotonic() > _state['motion_until']:
+        _state['motion'] = 'idle'
+        _state['motion_until'] = 0
+
+
+def snapshot():
+    with _lock:
+        _expire()
+        return {**_state, 'seq': _sequence, 'recent': list(_history)[-12:]}
+
+
+def set_activity(activity):
+    if activity not in ('idle', 'speaking', 'singing'):
+        raise ValueError('invalid activity')
+    with _lock:
+        _state['activity'] = activity
+
+
+def configure(data):
+    with _lock:
+        for key in ('auto_actions', 'paused', 'enabled'):
+            if key in data:
+                if not isinstance(data[key], bool):
+                    raise ValueError(f'{key} must be boolean')
+                _state[key] = data[key]
+        if _state['paused']:
+            _send('idle', 'operator', bypass=True)
+        return snapshot()
+
+
+def _send(name, source, bypass=False):
+    global _sequence
+    if name not in ALLOWED:
+        raise ValueError('unknown action')
+    if not bypass and (not _state['enabled'] or _state['paused']):
+        return {'ok': False, 'reason': 'controller disabled or paused'}
+    _expire()
+    if name == 'dance_cute' and _state['motion'] == 'dance_cute' and not bypass:
+        return {'ok': False, 'reason': 'already dancing'}
+    _sequence += 1
+    item = {'seq': _sequence, 'name': name, 'source': source, 'at': time.time(),
+            'duration': ALLOWED[name]['duration']}
+    _history.append(item)
+    _state['motion'] = name
+    _state['motion_until'] = time.monotonic() + item['duration'] if item['duration'] else 0
+    _state['last_action'] = name
+    _state['last_source'] = source
+    return {'ok': True, 'event': item}
+
+
+def dispatch(name, source='operator'):
+    with _lock:
+        return _send(name, source, bypass=(name == 'idle'))
+
+
+def from_comment(text, nick='viewer'):
+    """Conservative local rules; no model action execution or opaque commands."""
+    with _lock:
+        if not _state['auto_actions'] or _state['paused'] or not _state['enabled']:
+            return None
+        if any(x in text for x in ('跳个舞', '跳舞', '舞蹈')):
+            action, cooldown = 'dance_cute', 35
+        elif any(x in text for x in ('你好', '打招呼', '挥手')):
+            action, cooldown = 'wave', 8
+        elif any(x in text for x in ('可爱', '好看', '喜欢你')):
+            action, cooldown = 'shy', 15
+        else:
+            return None
+        if time.monotonic() - _last_auto.get(action, -1e9) < cooldown:
+            return None
+        # Avoid interrupting songs with performances; pending requests are not stored in v1.
+        if action == 'dance_cute' and _state['activity'] == 'singing':
+            return None
+        _last_auto[action] = time.monotonic()
+        return _send(action, f'comment:{nick[:16]}')

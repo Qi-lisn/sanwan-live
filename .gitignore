@@ -6,6 +6,9 @@ vendor/
 .uv-cache/
 .uv-python/
 
+# 升级包解压目录
+.upgrade/
+
 # 参考项目 / 第三方
 .ref-seed-vc/
 .ref-dsh-live-pet/

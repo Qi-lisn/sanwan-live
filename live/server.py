@@ -6,6 +6,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "vendor"
 import sounddevice as sd
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import brain
+import behavior
 
 ROOT = pathlib.Path(__file__).resolve().parent
 CACHE = ROOT / "cache"; CACHE.mkdir(exist_ok=True)
@@ -111,6 +112,31 @@ def _fresh(pool):
     avail = [x for x in pool if x not in used]
     return random.choice(avail or pool)
 
+_ai_act = {"t": 0}
+
+
+def _ai_motion(text):
+    """按回复的语气挑一个已注册动作，12 秒冷却，失败静默。"""
+    now = time.time()
+    if now - _ai_act["t"] < 12:
+        return
+    motion = None
+    if any(k in text for k in ("哈哈", "笑死", "嘿嘿", "逗")):
+        motion = "laugh"
+    elif any(k in text for k in ("害羞", "不好意思", "脸红")):
+        motion = "shy"
+    elif any(k in text for k in ("你好", "嗨", "挥手", "打招呼")):
+        motion = "wave"
+    elif any(k in text for k in ("嗯嗯", "点头", "说得对")):
+        motion = "nod"
+    if motion:
+        _ai_act["t"] = now
+        try:
+            behavior.dispatch(motion, "ai")
+        except Exception:
+            pass
+
+
 def _current_song_file():
     return _sing.get("file", "")
 
@@ -123,6 +149,10 @@ def play_song(item):
         _sing["started"] = time.time()
         _sing["file"] = item.get("file", "")
         _sing["songs_done"] += 1
+    try:
+        behavior.set_activity("singing")
+    except Exception:
+        pass
     data = pcm(mp3)
     lyrics = item.get("lyrics") or []
     dur = len(data) / 24000.0
@@ -157,6 +187,10 @@ def play_song(item):
     with _lock:
         _state["text"] = ""; _state["level"] = 0.0; _state["seq"] += 1
         _sing["ended"] = time.time()
+    try:
+        behavior.set_activity("idle")
+    except Exception:
+        pass
 
 
 def next_line():
@@ -328,6 +362,10 @@ def director():
             import numpy as _np
             _rms = float(_np.sqrt((data.astype('float32') ** 2).mean()) / 32768.0) if len(data) else 0.0
             _lvl = min(1.0, _rms * 4.0)
+            try:
+                behavior.set_activity("speaking")
+            except Exception:
+                pass
             with _lock:
                 _state["text"] = text; _state["comment"] = item["comment"]; _state["level"] = _lvl; _state["seq"] += 1; _stats["lines"] += 1
             sd.play(data, 24000, device=OUT_DEV)
@@ -335,6 +373,10 @@ def director():
             time.sleep(0.5 + random.random() * 0.6)
             with _lock:
                 _state["text"] = ""; _state["comment"] = None; _state["level"] = 0.0; _state["seq"] += 1
+            try:
+                behavior.set_activity("idle")
+            except Exception:
+                pass
         except Exception as e:
             print("director err", e, flush=True)
             time.sleep(2)
@@ -372,6 +414,27 @@ class H(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw): super().__init__(*a, directory=str(ROOT), **kw)
     def log_message(self, *a): pass
     def do_POST(self):
+        if self.path in ("/action", "/control"):
+            try:
+                n = int(self.headers.get("Content-Length", "0"))
+                if not (1 <= n <= 8192):
+                    raise ValueError("bad request size")
+                d = json.loads(self.rfile.read(n))
+                if not isinstance(d, dict):
+                    raise ValueError("body must be object")
+                if self.path == "/action":
+                    res = behavior.dispatch(d.get("name"), "operator")
+                else:
+                    res = {"ok": True, "state": behavior.configure(d)}
+                body = json.dumps(res, ensure_ascii=False).encode()
+                self.send_response(200 if res.get("ok") else 409)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            except (ValueError, TypeError) as e:
+                body = json.dumps({"ok": False, "error": str(e)}).encode()
+                self.send_response(400); self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
         if self.path == "/comment":
             n = int(self.headers.get("Content-Length", 0))
             try:
@@ -417,6 +480,10 @@ class H(SimpleHTTPRequestHandler):
                         self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
                         self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
                         return
+                try:
+                    behavior.from_comment(text, nick)
+                except Exception:
+                    pass
                 _bo = False
                 for _kw, _ans in TRIGGERS.items():
                     if _kw in text:
@@ -433,6 +500,8 @@ class H(SimpleHTTPRequestHandler):
                     for pat, ans in INTENTS:
                         if re.search(pat, text, re.I):
                             hit = random.choice(ans); break
+                if hit:
+                    _ai_motion(hit)
                 if hit is None and _ok and GREET.search(text):
                     hit = random.choice(REPLIES).format(nick=nick)
                 with _lock:
@@ -489,6 +558,12 @@ class H(SimpleHTTPRequestHandler):
                 with _lock:
                     _sing["tips"] += int(d.get("count", 1))
                     _sing["coins"] += int(d.get("value", 0) or 0)
+                try:
+                    if time.time() - _gift_act["t"] > 25:
+                        _gift_act["t"] = time.time()
+                        behavior.dispatch("happy", "gift")
+                except Exception:
+                    pass
                     _sing["tip_seq"] += 1
                     _sing["last_tip"] = {"nick": d.get("nick", ""), "gift": d.get("gift", ""),
                                          "count": int(d.get("count", 1))}
@@ -521,6 +596,11 @@ class H(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"): self.path = "/stage_port.html"
         if self.path.startswith("/reply"): self.path = "/reply.html"
+        if self.path.startswith("/action_state"):
+            body = json.dumps(behavior.snapshot(), ensure_ascii=False).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
         if self.path.startswith("/sing_state"):
             with _lock:
                 qn = []

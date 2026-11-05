@@ -1,15 +1,21 @@
-/* 三万舞台动作适配：轮询 /action_state，按动作切换 CSS 微动或透明 WebM。 */
+/* 三万舞台动作适配：轮询 /action_state，按动作切换透明 WebM 或 CSS 微动。 */
 (() => {
   const wrap = document.getElementById('heroWrap');
   if (!wrap) return;
 
+  // 动作 -> 透明视频素材（存在即用视频，缺失/解码失败回退 CSS）
+  const VIDEO_MAP = {
+    dance_cute: 'motions/dance_cute.webm',
+    wave: 'motions/wave.webm',
+  };
+
   const style = document.createElement('style');
   style.textContent = `
-    #heroWrap.sanwan-wave #heroBob {animation:sanwanWave .45s ease-in-out 5 alternate!important}
     #heroWrap.sanwan-happy #heroBob {animation:sanwanHappy .35s ease-in-out 5 alternate!important}
     #heroWrap.sanwan-shy #heroBob {animation:sanwanShy 1s ease-in-out 2!important}
     #heroWrap.sanwan-nod #heroBob {animation:sanwanNod .35s ease-in-out 4!important}
     #heroWrap.sanwan-laugh #heroBob {animation:sanwanLaugh .3s ease-in-out 6 alternate!important}
+    #heroWrap.sanwan-demo-wave #heroBob {animation:sanwanWave .45s ease-in-out 5 alternate!important}
     #heroWrap.sanwan-demo-dance #heroBob {animation:sanwanDance .6s ease-in-out 12 alternate!important}
     @keyframes sanwanWave {to{transform:rotate(3deg) translateX(8px)}}
     @keyframes sanwanHappy {to{transform:translateY(-12px) scale(1.02)}}
@@ -17,74 +23,84 @@
     @keyframes sanwanNod {to{transform:translateY(6px) rotate(-1deg)}}
     @keyframes sanwanLaugh {to{transform:translateY(-10px) scale(1.015)}}
     @keyframes sanwanDance {to{transform:rotate(5deg) translateY(-14px) scale(1.02)}}
-    #sanwanDanceVideo{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    .sanwan-clip{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
       height:100%;width:auto;max-width:none;object-fit:contain;display:none;z-index:3;pointer-events:none}
   `;
   document.head.appendChild(style);
 
-  const video = document.createElement('video');
-  video.id = 'sanwanDanceVideo';
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = 'auto';
-  video.src = 'motions/dance_cute.webm';
-  wrap.appendChild(video);
-
+  const clips = {};       // name -> <video>
+  const clipOk = {};      // name -> 是否可播放
+  const clipDur = {};     // name -> 真实时长
   let lastSeq = -1;
   let timeoutId = null;
-  let videoOk = true;          // 素材缺失/解码失败后置 false，后续直接走 CSS 示意
-  let videoDuration = 8;       // 默认值，拿到 metadata 后覆盖
+  let current = null;     // 当前播放的 clip 名
 
   function showHero() {
     const bob = document.getElementById('heroBob');
     if (bob) bob.style.visibility = '';
   }
 
+  function getClip(name) {
+    if (clips[name]) return clips[name];
+    const v = document.createElement('video');
+    v.className = 'sanwan-clip';
+    v.dataset.name = name;
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.src = VIDEO_MAP[name];
+    v.addEventListener('loadedmetadata', () => {
+      if (isFinite(v.duration) && v.duration > 0) clipDur[name] = v.duration;
+    });
+    v.addEventListener('error', () => {
+      clipOk[name] = false;
+      if (current === name) { v.style.display = 'none'; showHero(); }
+    });
+    v.addEventListener('ended', () => { if (current === name) reset(); });
+    wrap.appendChild(v);
+    clips[name] = v;
+    return v;
+  }
+
   function reset() {
     clearTimeout(timeoutId);
     timeoutId = null;
-    wrap.classList.remove('sanwan-wave', 'sanwan-happy', 'sanwan-shy', 'sanwan-nod', 'sanwan-laugh', 'sanwan-demo-dance');
-    try { video.pause(); } catch (_) {}
-    video.style.display = 'none';
+    Object.keys(clips).forEach(n => {
+      const v = clips[n];
+      try { v.pause(); } catch (_) {}
+      v.style.display = 'none';
+    });
+    current = null;
+    wrap.classList.remove('sanwan-happy', 'sanwan-shy', 'sanwan-nod', 'sanwan-laugh',
+                          'sanwan-demo-wave', 'sanwan-demo-dance');
     showHero();
   }
 
-  function demoDance(duration) {
+  function demo(name, duration) {
     reset();
-    wrap.classList.add('sanwan-demo-dance');
+    wrap.classList.add('sanwan-demo-' + (name === 'dance_cute' ? 'dance' : 'wave'));
     timeoutId = setTimeout(reset, Math.max(1000, duration * 1000));
   }
 
-  function playDance(duration) {
+  function playClip(name, duration) {
     reset();
+    const v = getClip(name);
     const bob = document.getElementById('heroBob');
-    const h = (bob && bob.offsetHeight) || 900;
-    video.style.height = h + 'px';
-    video.style.display = 'block';
+    v.style.height = ((bob && bob.offsetHeight) || 900) + 'px';
+    v.style.display = 'block';
     if (bob) bob.style.visibility = 'hidden';
-    try { video.currentTime = 0; } catch (_) {}
-    const p = video.play();
-    if (p && p.catch) {
-      p.catch(() => { videoOk = false; demoDance(duration); });
-    }
-    // 以视频真实时长为准，动作时长作为兜底
-    timeoutId = setTimeout(reset, Math.max(duration, videoDuration) * 1000 + 400);
+    current = name;
+    try { v.currentTime = 0; } catch (_) {}
+    const p = v.play();
+    if (p && p.catch) p.catch(() => { clipOk[name] = false; demo(name, duration); });
+    timeoutId = setTimeout(reset, Math.max(duration || 0, clipDur[name] || duration || 0) * 1000 + 400);
   }
-
-  video.addEventListener('loadedmetadata', () => {
-    if (isFinite(video.duration) && video.duration > 0) videoDuration = video.duration;
-  });
-  video.addEventListener('ended', reset);
-  video.addEventListener('error', () => {
-    videoOk = false;
-    if (video.style.display === 'block') demoDance(videoDuration);
-  });
 
   function perform(e) {
     if (e.name === 'idle') { reset(); return; }
-    if (e.name === 'dance_cute') {
-      if (videoOk) playDance(e.duration || 8);
-      else demoDance(e.duration || 8);
+    if (VIDEO_MAP[e.name]) {
+      if (clipOk[e.name] === false) demo(e.name, e.duration || 2);
+      else playClip(e.name, e.duration);
       return;
     }
     reset();
@@ -97,14 +113,14 @@
       const r = await fetch('/action_state', { cache: 'no-store' });
       if (r.ok) {
         const d = await r.json();
-        if (lastSeq === -1) lastSeq = d.seq;      // 刷新页面不重放旧动作
+        if (lastSeq === -1) lastSeq = d.seq;
         if (d.seq > lastSeq && d.recent && d.recent.length) {
           lastSeq = d.seq;
           perform(d.recent[d.recent.length - 1]);
         }
         if (d.paused) reset();
       }
-    } catch (_) { /* 后端不可用时保持原状 */ }
+    } catch (_) { /* 后端不可用保持原状 */ }
     setTimeout(poll, 250);
   }
   poll();

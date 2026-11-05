@@ -6,7 +6,8 @@ vendor/
 .uv-cache/
 .uv-python/
 
-# 升级包解压目录
+# 升级包 / 素材测试包解压目录
+.dance-pkg/
 .upgrade/
 
 # 参考项目 / 第三方
@@ -19,6 +20,7 @@ live/live2d/
 train/
 out/
 live/cache/
+live/motions/*.webm
 live/songs/*.mp3
 live/*.wav
 *.dmg

@@ -44,6 +44,15 @@ def set_activity(activity):
         _state['activity'] = activity
 
 
+def set_duration(name, seconds):
+    """让动作时长与真实素材对齐（例如舞蹈视频实际时长）。"""
+    with _lock:
+        if name in ALLOWED and seconds and seconds > 0:
+            ALLOWED[name]['duration'] = round(float(seconds), 2)
+            return True
+        return False
+
+
 def auto_allowed():
     """自动触发渠道（弹幕/礼物/AI）的总开关。"""
     with _lock:
@@ -72,7 +81,8 @@ def _send(name, source, bypass=False):
     if name == 'dance_cute' and _state['activity'] == 'singing' and source != 'operator':
         return {'ok': False, 'reason': 'singing'}
     current = _state['motion']
-    if not bypass and current != 'idle' and _state['motion_until'] > time.monotonic():
+    # 人工操作总是可以接管（包括打断舞蹈）；自动触发才受优先级约束
+    if not bypass and source != 'operator' and current != 'idle' and _state['motion_until'] > time.monotonic():
         if PRIORITY.get(name, 0) <= PRIORITY.get(current, 0):
             return {'ok': False, 'reason': 'lower priority', 'current': current}
     if name == 'dance_cute' and _state['motion'] == 'dance_cute' and not bypass:

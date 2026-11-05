@@ -95,6 +95,25 @@ if _previous:
     _priority.append({"text": f"上次被老板抓了{int(_previous.get('caught', 0))}次 今天帮我看着点", "comment": None})
 
 
+def _sync_dance_duration():
+    """按真实视频时长校准舞蹈动作，避免视频没播完就切回立绘。"""
+    video = ROOT / "motions/dance_cute.webm"
+    if not video.exists():
+        return None
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                              "-of", "default=nw=1:nk=1", str(video)],
+                             capture_output=True, text=True, timeout=10).stdout.strip()
+        dur = float(out)
+    except Exception:
+        return None
+    behavior.set_duration("dance_cute", dur)
+    return dur
+
+
+_DANCE_DURATION = _sync_dance_duration()
+
+
 def save_diary():
     with _lock:
         summary = {"start": _t0, "end": time.time(), "lines": _stats["lines"],
@@ -632,7 +651,10 @@ class H(SimpleHTTPRequestHandler):
         if self.path in ("/", "/index.html"): self.path = "/stage_port.html"
         if self.path.startswith("/reply"): self.path = "/reply.html"
         if self.path.startswith("/action_state"):
-            body = json.dumps(behavior.snapshot(), ensure_ascii=False).encode()
+            snap = behavior.snapshot()
+            snap["dance_video"] = {"present": (ROOT / "motions/dance_cute.webm").exists(),
+                                   "duration": _DANCE_DURATION}
+            body = json.dumps(snap, ensure_ascii=False).encode()
             self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
             return

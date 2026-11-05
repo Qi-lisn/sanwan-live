@@ -92,15 +92,28 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertTrue(d["ok"])
 
-    def test_06_priority_guard(self):
+    def test_06_auto_action_cannot_override_dance(self):
+        api("/control", {"paused": False, "auto_actions": True})
+        api("/action", {"name": "idle"})
+        api("/comment", {"nick": "点舞哥", "text": "跳个舞"})
+        time.sleep(0.6)
+        self.assertEqual(self._state()["motion"], "dance_cute")
+        api("/comment", {"nick": "挥手哥", "text": "挥手"})
+        time.sleep(0.6)
+        self.assertEqual(self._state()["motion"], "dance_cute", "自动动作不应打断舞蹈")
+        api("/action", {"name": "idle"})
+
+    def test_08_operator_can_interrupt_dance(self):
         api("/control", {"paused": False, "auto_actions": True})
         api("/action", {"name": "dance_cute"})
         code, d = api("/action", {"name": "wave"})
-        self.assertEqual(code, 409)
-        self.assertEqual(d.get("reason"), "lower priority")
+        self.assertEqual(code, 200)
+        self.assertTrue(d["ok"])
+        self.assertEqual(self._state()["motion"], "wave")
         api("/action", {"name": "idle"})
 
     def test_07_duplicate_comment_fires_once(self):
+        time.sleep(8.2)  # 等挥手冷却过去，避免上一项测试影响
         api("/control", {"auto_actions": True, "paused": False})
         api("/action", {"name": "idle"})
         seq0 = self._state()["seq"]
@@ -108,15 +121,3 @@ class ApiTests(unittest.TestCase):
         api("/comment", {"nick": "重复哥", "text": "挥手"})
         time.sleep(0.8)
         self.assertEqual(self._state()["seq"], seq0 + 1, "同一条弹幕只应触发一次")
-
-    def test_08_lower_priority_does_not_override_manual(self):
-        api("/action", {"name": "idle"})
-        api("/control", {"paused": False})
-        api("/action", {"name": "wave"})
-        code, d = api("/action", {"name": "nod"})
-        self.assertEqual(code, 409)
-        api("/action", {"name": "idle"})
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)

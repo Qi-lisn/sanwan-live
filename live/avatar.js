@@ -1,7 +1,8 @@
-/* Visual-only avatar adapter. Polls the local controller, never calls an LLM. */
+/* 三万舞台动作适配：轮询 /action_state，按动作切换 CSS 微动或透明 WebM。 */
 (() => {
   const wrap = document.getElementById('heroWrap');
   if (!wrap) return;
+
   const style = document.createElement('style');
   style.textContent = `
     #heroWrap.sanwan-wave #heroBob {animation:sanwanWave .45s ease-in-out 5 alternate!important}
@@ -16,66 +17,94 @@
     @keyframes sanwanNod {to{transform:translateY(6px) rotate(-1deg)}}
     @keyframes sanwanLaugh {to{transform:translateY(-10px) scale(1.015)}}
     @keyframes sanwanDance {to{transform:rotate(5deg) translateY(-14px) scale(1.02)}}
-    #sanwanDanceVideo {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none;z-index:3}
+    #sanwanDanceVideo{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+      height:100%;width:auto;max-width:none;object-fit:contain;display:none;z-index:3;pointer-events:none}
   `;
   document.head.appendChild(style);
+
   const video = document.createElement('video');
   video.id = 'sanwanDanceVideo';
   video.muted = true;
   video.playsInline = true;
   video.preload = 'auto';
-  // Transparent WebM file must be supplied separately; fallback does NOT provide real limb animation.
   video.src = 'motions/dance_cute.webm';
   wrap.appendChild(video);
-  let lastSeq = -1, timeoutId = null;
-  function reset() {
-    clearTimeout(timeoutId);
-    wrap.classList.remove('sanwan-wave','sanwan-happy','sanwan-shy','sanwan-nod','sanwan-laugh','sanwan-demo-dance');
-    video.pause(); video.style.display = 'none';
+
+  let lastSeq = -1;
+  let timeoutId = null;
+  let videoOk = true;          // 素材缺失/解码失败后置 false，后续直接走 CSS 示意
+  let videoDuration = 8;       // 默认值，拿到 metadata 后覆盖
+
+  function showHero() {
     const bob = document.getElementById('heroBob');
     if (bob) bob.style.visibility = '';
   }
-  function perform(e) {
-    reset();
-    if (e.name === 'idle') return;
-    const duration = Math.max(100, (e.duration || 2) * 1000);
-    if (e.name === 'dance_cute') {
-      video.currentTime = 0;
-      const bob = document.getElementById('heroBob');
-      // Size video before hiding the in-flow image; otherwise the wrapper collapses.
-      if (bob) video.style.height = bob.offsetHeight + 'px';
-      video.style.display = 'block';
-      if (bob) bob.style.visibility = 'hidden';
-      video.play().catch(() => {
-        if (bob) bob.style.visibility = '';
-        video.style.display = 'none';
-        wrap.classList.add('sanwan-demo-dance');
-      });
-    } else wrap.classList.add('sanwan-' + e.name);
-    timeoutId = setTimeout(reset, duration);
+
+  function reset() {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+    wrap.classList.remove('sanwan-wave', 'sanwan-happy', 'sanwan-shy', 'sanwan-nod', 'sanwan-laugh', 'sanwan-demo-dance');
+    try { video.pause(); } catch (_) {}
+    video.style.display = 'none';
+    showHero();
   }
-  video.addEventListener('error', () => {
-    if (video.style.display === 'block') {
-      video.style.display='none';
-      const bob = document.getElementById('heroBob');
-      if (bob) bob.style.visibility = '';
-      wrap.classList.add('sanwan-demo-dance');
+
+  function demoDance(duration) {
+    reset();
+    wrap.classList.add('sanwan-demo-dance');
+    timeoutId = setTimeout(reset, Math.max(1000, duration * 1000));
+  }
+
+  function playDance(duration) {
+    reset();
+    const bob = document.getElementById('heroBob');
+    const h = (bob && bob.offsetHeight) || 900;
+    video.style.height = h + 'px';
+    video.style.display = 'block';
+    if (bob) bob.style.visibility = 'hidden';
+    try { video.currentTime = 0; } catch (_) {}
+    const p = video.play();
+    if (p && p.catch) {
+      p.catch(() => { videoOk = false; demoDance(duration); });
     }
+    // 以视频真实时长为准，动作时长作为兜底
+    timeoutId = setTimeout(reset, Math.max(duration, videoDuration) * 1000 + 400);
+  }
+
+  video.addEventListener('loadedmetadata', () => {
+    if (isFinite(video.duration) && video.duration > 0) videoDuration = video.duration;
   });
+  video.addEventListener('ended', reset);
+  video.addEventListener('error', () => {
+    videoOk = false;
+    if (video.style.display === 'block') demoDance(videoDuration);
+  });
+
+  function perform(e) {
+    if (e.name === 'idle') { reset(); return; }
+    if (e.name === 'dance_cute') {
+      if (videoOk) playDance(e.duration || 8);
+      else demoDance(e.duration || 8);
+      return;
+    }
+    reset();
+    wrap.classList.add('sanwan-' + e.name);
+    timeoutId = setTimeout(reset, Math.max(100, (e.duration || 2) * 1000));
+  }
+
   async function poll() {
     try {
-      const r = await fetch('/action_state', {cache:'no-store'});
+      const r = await fetch('/action_state', { cache: 'no-store' });
       if (r.ok) {
         const d = await r.json();
-        if (lastSeq === -1) lastSeq = d.seq; // Don't replay old action after page refresh.
-        if (d.seq > lastSeq && d.recent?.length) {
-          const event = d.recent[d.recent.length - 1];
+        if (lastSeq === -1) lastSeq = d.seq;      // 刷新页面不重放旧动作
+        if (d.seq > lastSeq && d.recent && d.recent.length) {
           lastSeq = d.seq;
-          perform(event);
+          perform(d.recent[d.recent.length - 1]);
         }
-        if (d.paused && video.style.display === 'block') reset();
+        if (d.paused) reset();
       }
-    } catch (_) { /* Retain normal stage when backend unavailable. */ }
+    } catch (_) { /* 后端不可用时保持原状 */ }
     setTimeout(poll, 250);
   }
   poll();

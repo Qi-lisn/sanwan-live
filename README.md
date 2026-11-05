@@ -43,6 +43,14 @@ assets/         立绘与图层
 - 跳舞需要 `live/motions/dance_cute.webm`（透明背景），没有时退回整图摇摆示意
 - `paused` 只停角色动作，不停 TTS、唱歌和推流
 
+## V1.1 动画接入（2026-11-05）
+
+- `live/motions/dance_cute.webm`：透明 VP9 alpha 视频，放进去即生效
+- 视频时长会通过 ffprobe 自动同步到动作时长，播完自动恢复立绘
+- 素材缺失/解码失败退回整图摇摆，不会黑屏
+- 人工操作可随时打断任意动作（自动触发仍受优先级约束）
+- 正式素材规范见 [docs/motion-assets.md](docs/motion-assets.md)
+
 ## 跑起来
 
 1. 安装依赖

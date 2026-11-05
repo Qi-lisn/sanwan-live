@@ -33,7 +33,7 @@ class BehaviorUnit(unittest.TestCase):
 
     def test_lower_priority_cannot_override(self):
         behavior.dispatch("dance_cute", "operator")
-        r = behavior.dispatch("wave", "operator")
+        r = behavior.dispatch("wave", "comment:x")
         self.assertFalse(r["ok"])
         self.assertEqual(r["reason"], "lower priority")
 

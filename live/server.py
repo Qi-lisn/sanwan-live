@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """三万直播间：出词 + 火山 TTS + 播放到 BlackHole + 字幕状态"""
-import hashlib, json, pathlib, random, re, subprocess, sys, threading, time, urllib.request, uuid, wave
+import hashlib, json, os, pathlib, random, re, subprocess, sys, threading, time, urllib.request, uuid, wave
 import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "vendor"))
 import sounddevice as sd
@@ -73,6 +73,9 @@ REPLIES = ["{nick} 你好呀", "看到你了 {nick}", "{nick} 来啦", "晚上�
 _last_nick = {}
 _priority = []
 _last_report = {"t": 0}
+_gift_act = {"t": 0}
+GIFT_ACTION_COOLDOWN = 25
+_act_seen = {}
 
 _lock = threading.Lock()
 _comment_seq = [0]
@@ -118,7 +121,7 @@ _ai_act = {"t": 0}
 def _ai_motion(text):
     """按回复的语气挑一个已注册动作，12 秒冷却，失败静默。"""
     now = time.time()
-    if now - _ai_act["t"] < 12:
+    if now - _ai_act["t"] < 12 or not behavior.auto_allowed():
         return
     motion = None
     if any(k in text for k in ("哈哈", "笑死", "嘿嘿", "逗")):
@@ -158,39 +161,41 @@ def play_song(item):
     dur = len(data) / 24000.0
     with _lock:
         _state["text"] = "给你唱一段"; _state["seq"] += 1; _state["level"] = 0.2
-    sd.play(data, 24000, device=OUT_DEV)
     started = time.time()
     seg = dur / max(1, len(lyrics))
     shown = -1
     import numpy as _np
-    while time.time() - started < dur + 0.2:
-        elapsed = time.time() - started
-        if lyrics and isinstance(lyrics[0], dict):
-            idx = -1
-            for j, ly in enumerate(lyrics):
-                if elapsed >= float(ly.get("t", 0)):
-                    idx = j
-        else:
-            idx = min(len(lyrics) - 1, int(elapsed / seg)) if lyrics else -1
-        i0 = int(elapsed * 24000)
-        chunk = data[i0:i0 + 2400]
-        lvl = 0.0
-        if len(chunk):
-            lvl = min(1.0, float(_np.sqrt((chunk.astype("float32") ** 2).mean()) / 32768.0) * 5.0)
-        with _lock:
-            _state["level"] = lvl
-            if idx != shown and idx >= 0:
-                shown = idx
-                _state["text"] = lyrics[idx]["text"] if isinstance(lyrics[idx], dict) else lyrics[idx]
-                _state["seq"] += 1
-        time.sleep(0.1)
-    with _lock:
-        _state["text"] = ""; _state["level"] = 0.0; _state["seq"] += 1
-        _sing["ended"] = time.time()
     try:
-        behavior.set_activity("idle")
-    except Exception:
-        pass
+        sd.play(data, 24000, device=OUT_DEV)
+        while time.time() - started < dur + 0.2:
+            elapsed = time.time() - started
+            if lyrics and isinstance(lyrics[0], dict):
+                idx = -1
+                for j, ly in enumerate(lyrics):
+                    if elapsed >= float(ly.get("t", 0)):
+                        idx = j
+            else:
+                idx = min(len(lyrics) - 1, int(elapsed / seg)) if lyrics else -1
+            i0 = int(elapsed * 24000)
+            chunk = data[i0:i0 + 2400]
+            lvl = 0.0
+            if len(chunk):
+                lvl = min(1.0, float(_np.sqrt((chunk.astype("float32") ** 2).mean()) / 32768.0) * 5.0)
+            with _lock:
+                _state["level"] = lvl
+                if idx != shown and idx >= 0:
+                    shown = idx
+                    _state["text"] = lyrics[idx]["text"] if isinstance(lyrics[idx], dict) else lyrics[idx]
+                    _state["seq"] += 1
+            time.sleep(0.1)
+    finally:
+        with _lock:
+            _state["text"] = ""; _state["level"] = 0.0; _state["seq"] += 1
+            _sing["ended"] = time.time()
+        try:
+            behavior.set_activity("idle")
+        except Exception:
+            pass
 
 
 def next_line():
@@ -239,7 +244,7 @@ def next_line():
         if song:
             return {"type": "song", "file": song["file"], "lyrics": song.get("lyrics", []),
                     "text": "给你唱一段", "title": song.get("title", "")}
-    if meta and not _sing["queue"] and time.time() - _sing.get("ended", 0) > 150:
+    if meta and not _sing["queue"] and time.time() - max(_sing.get("ended", 0), _start_at) > 150:
         song = random.choice(meta)
         return {"type": "song", "file": song["file"], "lyrics": song.get("lyrics", []),
                 "text": "给你唱一段", "title": song.get("title", "")}
@@ -368,15 +373,17 @@ def director():
                 pass
             with _lock:
                 _state["text"] = text; _state["comment"] = item["comment"]; _state["level"] = _lvl; _state["seq"] += 1; _stats["lines"] += 1
-            sd.play(data, 24000, device=OUT_DEV)
-            sd.wait()
-            time.sleep(0.5 + random.random() * 0.6)
-            with _lock:
-                _state["text"] = ""; _state["comment"] = None; _state["level"] = 0.0; _state["seq"] += 1
             try:
-                behavior.set_activity("idle")
-            except Exception:
-                pass
+                sd.play(data, 24000, device=OUT_DEV)
+                sd.wait()
+                time.sleep(0.5 + random.random() * 0.6)
+            finally:
+                with _lock:
+                    _state["text"] = ""; _state["comment"] = None; _state["level"] = 0.0; _state["seq"] += 1
+                try:
+                    behavior.set_activity("idle")
+                except Exception:
+                    pass
         except Exception as e:
             print("director err", e, flush=True)
             time.sleep(2)
@@ -412,9 +419,24 @@ def brain_on():
 
 class H(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw): super().__init__(*a, directory=str(ROOT), **kw)
+
+    def _admin_ok(self):
+        """本地管理接口：只接受回环地址，可选 CONTROL_TOKEN。"""
+        host = self.client_address[0] if self.client_address else ""
+        if host not in ("127.0.0.1", "::1"):
+            return False
+        token = os.environ.get("CONTROL_TOKEN")
+        if token and self.headers.get("X-Control-Token") != token:
+            return False
+        return True
     def log_message(self, *a): pass
     def do_POST(self):
         if self.path in ("/action", "/control"):
+            if not self._admin_ok():
+                body = json.dumps({"ok": False, "error": "local only"}).encode()
+                self.send_response(403); self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+                return
             try:
                 n = int(self.headers.get("Content-Length", "0"))
                 if not (1 <= n <= 8192):
@@ -480,10 +502,6 @@ class H(SimpleHTTPRequestHandler):
                         self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
                         self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
                         return
-                try:
-                    behavior.from_comment(text, nick)
-                except Exception:
-                    pass
                 _bo = False
                 for _kw, _ans in TRIGGERS.items():
                     if _kw in text:
@@ -506,6 +524,15 @@ class H(SimpleHTTPRequestHandler):
                     hit = random.choice(REPLIES).format(nick=nick)
                 with _lock:
                     key = (nick, text)
+                    if now - _act_seen.get(key, 0) > 5:
+                        _act_seen[key] = now
+                        try:
+                            _r = behavior.from_comment(text, nick)
+                            if os.environ.get("SANWAN_DEBUG"):
+                                print("action", text, "->", _r, flush=True)
+                        except Exception as _e:
+                            if os.environ.get("SANWAN_DEBUG"):
+                                print("action err", type(_e).__name__, _e, flush=True)
                     if hit and now - _last_nick.get(key, 0) > 90:
                         _last_nick[key] = now
                         if "老板来了" in text:
@@ -522,6 +549,10 @@ class H(SimpleHTTPRequestHandler):
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers(); self.wfile.write(body)
             except Exception as e:
+                if os.environ.get("SANWAN_DEBUG"):
+                    import traceback as _tb
+                    print("comment err", type(e).__name__, e, flush=True)
+                    _tb.print_exc()
                 self.send_response(400); self.end_headers()
             return
         if self.path == "/request":
@@ -555,19 +586,23 @@ class H(SimpleHTTPRequestHandler):
             n = int(self.headers.get("Content-Length", 0))
             try:
                 d = json.loads(self.rfile.read(n) or b"{}")
+                cnt = max(1, int(d.get("count", 1) or 1))
+                val = max(0, int(d.get("value", 0) or 0))
                 with _lock:
-                    _sing["tips"] += int(d.get("count", 1))
-                    _sing["coins"] += int(d.get("value", 0) or 0)
-                try:
-                    if time.time() - _gift_act["t"] > 25:
-                        _gift_act["t"] = time.time()
-                        behavior.dispatch("happy", "gift")
-                except Exception:
-                    pass
+                    _sing["tips"] += cnt
+                    _sing["coins"] += val
                     _sing["tip_seq"] += 1
-                    _sing["last_tip"] = {"nick": d.get("nick", ""), "gift": d.get("gift", ""),
-                                         "count": int(d.get("count", 1))}
-                body = json.dumps({"ok": True, "tips": _sing["tips"]}).encode()
+                    _sing["last_tip"] = {"nick": str(d.get("nick", ""))[:16],
+                                         "gift": str(d.get("gift", ""))[:24],
+                                         "count": cnt}
+                    total = _sing["tips"]
+                if behavior.auto_allowed() and time.time() - _gift_act["t"] > GIFT_ACTION_COOLDOWN:
+                    _gift_act["t"] = time.time()
+                    try:
+                        behavior.dispatch("happy", "gift")
+                    except Exception:
+                        pass
+                body = json.dumps({"ok": True, "tips": total, "coins": _sing["coins"]}, ensure_ascii=False).encode()
                 self.send_response(200); self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
             except Exception:
@@ -637,4 +672,5 @@ if __name__ == "__main__":
     print("output device:", OUT_DEV, flush=True)
     threading.Thread(target=bgm_loop, daemon=True).start()
     threading.Thread(target=director, daemon=True).start()
-    ThreadingHTTPServer(("127.0.0.1", 8765), H).serve_forever()
+    port = int(os.environ.get("SANWAN_PORT", "8765"))
+    ThreadingHTTPServer(("127.0.0.1", port), H).serve_forever()

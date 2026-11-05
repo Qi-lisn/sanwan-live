@@ -12,6 +12,8 @@ ALLOWED = {
     'dance_cute': {'duration': 8.0, 'kind': 'performance'},
     'idle': {'duration': 0.0, 'kind': 'system'},
 }
+PRIORITY = {'idle': 0, 'nod': 1, 'laugh': 1, 'wave': 2, 'happy': 2, 'shy': 2, 'dance_cute': 3}
+
 _lock = threading.RLock()
 _sequence = 0
 _history = collections.deque(maxlen=40)
@@ -42,6 +44,12 @@ def set_activity(activity):
         _state['activity'] = activity
 
 
+def auto_allowed():
+    """自动触发渠道（弹幕/礼物/AI）的总开关。"""
+    with _lock:
+        return bool(_state['enabled'] and _state['auto_actions'] and not _state['paused'])
+
+
 def configure(data):
     with _lock:
         for key in ('auto_actions', 'paused', 'enabled'):
@@ -61,6 +69,12 @@ def _send(name, source, bypass=False):
     if not bypass and (not _state['enabled'] or _state['paused']):
         return {'ok': False, 'reason': 'controller disabled or paused'}
     _expire()
+    if name == 'dance_cute' and _state['activity'] == 'singing' and source != 'operator':
+        return {'ok': False, 'reason': 'singing'}
+    current = _state['motion']
+    if not bypass and current != 'idle' and _state['motion_until'] > time.monotonic():
+        if PRIORITY.get(name, 0) <= PRIORITY.get(current, 0):
+            return {'ok': False, 'reason': 'lower priority', 'current': current}
     if name == 'dance_cute' and _state['motion'] == 'dance_cute' and not bypass:
         return {'ok': False, 'reason': 'already dancing'}
     _sequence += 1

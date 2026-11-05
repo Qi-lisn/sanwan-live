@@ -1,0 +1,31 @@
+{
+ "frozen_at": "2026-11-05",
+ "note": "V0.4.2 几何与蒙版冻结，V0.4.3 只许替换 shoulder_fill_v4.png",
+ "files": {
+  "mask_hard": {
+   "path": "live2d/v042/shoulder_repaint_mask_v3.png",
+   "sha256": "a482220b6e505fe2",
+   "bytes": 3273
+  },
+  "mask_soft": {
+   "path": "live2d/v042/shoulder_repaint_mask_v3_soft.png",
+   "sha256": "078a4b83b29dbd47",
+   "bytes": 8452
+  },
+  "torso_base_clean": {
+   "path": "live2d/v042/torso_base_clean.png",
+   "sha256": "a2b1b19eb62be8ac",
+   "bytes": 1254858
+  },
+  "hand_open_clean": {
+   "path": "live2d/v042/hand_open_clean.png",
+   "sha256": "afdf569904c4816f",
+   "bytes": 24719
+  },
+  "master_expanded": {
+   "path": ".joint-v03/native/character_master_expanded.png",
+   "sha256": "af010fa81fb062be",
+   "bytes": 1311361
+  }
+ }
+}

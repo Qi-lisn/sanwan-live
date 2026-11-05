@@ -8,6 +8,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import brain
 import behavior
 import dayparts
+import delivery
 
 ROOT = pathlib.Path(__file__).resolve().parent
 CACHE = ROOT / "cache"; CACHE.mkdir(exist_ok=True)
@@ -79,6 +80,7 @@ GIFT_ACTION_COOLDOWN = 25
 _act_seen = {}
 _start_at = time.time()
 _last_block = {"id": None}
+_delivery_gap = {"t": 0.0}
 ACTION_LINES = {"dance_cute": "行 给你跳一个", "wave": "挥一个 看见没",
                 "shy": "哎呀 别这么夸", "laugh": "你这么一说 我也想笑"}
 
@@ -271,6 +273,15 @@ def next_line():
         return {"text": f"现在{now.tm_hour}点{now.tm_min:02d}分 离下班还有{left // 60}小时{left % 60}分", "comment": None}
 
     blk = dayparts.block_at()
+    if blk.get("map"):
+        ds = delivery.snapshot()
+        if ds["status"] == "idle" and time.time() - _delivery_gap["t"] > 25:
+            o = delivery.new_order()
+            _delivery_gap["t"] = time.time()
+            return {"text": f"接单 一份{o['good']} 送到{o['place_name']}", "comment": None}
+        if ds["status"] == "idle" and ds["last_result"]:
+            return {"text": ds["last_result"], "comment": None}
+
     if blk["id"] != _last_block["id"]:
         _last_block["id"] = blk["id"]
         with _lock:
@@ -605,6 +616,18 @@ class H(SimpleHTTPRequestHandler):
                     _tb.print_exc()
                 self.send_response(400); self.end_headers()
             return
+        if self.path == "/delivery/new":
+            o = delivery.new_order()
+            body = json.dumps({"ok": True, "order": o}, ensure_ascii=False).encode()
+            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
+        if self.path == "/delivery/reset":
+            delivery.reset()
+            body = b'{"ok": true}'
+            self.send_response(200); self.send_header("Content-Type","application/json")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
         if self.path == "/request":
             n = int(self.headers.get("Content-Length", 0))
             try:
@@ -681,6 +704,11 @@ class H(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"): self.path = "/stage_port.html"
         if self.path.startswith("/reply"): self.path = "/reply.html"
+        if self.path.startswith("/delivery"):
+            body = json.dumps(delivery.snapshot(), ensure_ascii=False).encode()
+            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
         if self.path.startswith("/daypart"):
             body = json.dumps(dayparts.snapshot(), ensure_ascii=False).encode()
             self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")

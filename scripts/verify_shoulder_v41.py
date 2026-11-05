@@ -49,7 +49,17 @@ def main(path):
     for i in range(1, n + 1):
         ys, xs = np.where(lab == i)
         if len(xs) > 150: blobs.append([int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()), len(xs)])
-    rep["art"]["pocket_strip"] = {"blobs": blobs, "count": len(blobs), "ok": len(blobs) == 1}
+    # 与母版比对：母版本身就有 2 段（高光把反光条切成两截），多余条才算失败
+    ref = np.array(master)[:, :, :3].astype(int)
+    rstrip = (ref[:, :, 2] > 200) & (ref[:, :, 2] - ref[:, :, 0] > 25) & (ref[:, :, 1] > 180)
+    rlab, rn = ndi.label(rstrip & region)
+    ref_blobs = []
+    for i in range(1, rn + 1):
+        ys, xs = np.where(rlab == i)
+        if len(xs) > 150: ref_blobs.append(((xs.min()+xs.max())/2, (ys.min()+ys.max())/2))
+    def ctr(b): return ((b[0]+b[2])/2, (b[1]+b[3])/2)
+    extra = [b for b in blobs if all(abs(ctr(b)[0]-r[0]) > 15 or abs(ctr(b)[1]-r[1]) > 15 for r in ref_blobs)]
+    rep["art"]["pocket_strip"] = {"blobs": blobs, "ref_blobs": len(ref_blobs), "extra": extra, "ok": not extra}
 
     # 5 双下摆：蒙版下缘以下仍覆盖原有不透明像素
     below = np.zeros_like(mask); below[HEM_Y + 1:, :] = True

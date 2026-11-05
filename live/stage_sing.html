@@ -69,6 +69,20 @@
     line-height:1.3;color:#f8efd8;opacity:0;transition:opacity .2s;text-shadow:0 0 24px rgba(255,220,160,.25)}
   #caption.on{opacity:1}
   #foot{position:absolute;left:90px;bottom:40px;font-size:21px;color:#8d7fb8;letter-spacing:.12em}
+
+/* 时段氛围 */
+#stage.dp-dusk #vig{background:radial-gradient(ellipse at 50% 40%,transparent 35%,rgba(60,30,70,.30) 100%)}
+#stage.dp-dark #bg{filter:brightness(.55) saturate(.85) hue-rotate(-8deg)}
+#stage.dp-dark #hero,#stage.dp-dark #blink,#stage.dp-dark #mouth{filter:brightness(.72) contrast(1.05)}
+#stage.dp-dark #vig{background:radial-gradient(ellipse at 50% 42%,transparent 25%,rgba(10,8,20,.55) 100%)}
+#stage.dp-black #bg{filter:brightness(.18) saturate(.5)}
+#stage.dp-black #hero,#stage.dp-black #blink,#stage.dp-black #mouth{filter:brightness(.35) contrast(1.1)}
+#stage.dp-black #panel,#stage.dp-black #topbar,#stage.dp-black #foot{opacity:.35}
+#stage.dp-black #vig{background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,.35) 0%,rgba(0,0,0,.82) 100%)}
+#daypart{position:absolute;left:50px;top:196px;z-index:9;font-size:20px;letter-spacing:2px;
+  color:#cfc3e8;background:rgba(18,14,30,.55);border:1px solid rgba(160,140,200,.35);
+  border-radius:999px;padding:8px 20px;backdrop-filter:blur(6px)}
+#daypart b{color:#fff;font-weight:600;letter-spacing:3px}
 </style>
 </head>
 <body>
@@ -78,6 +92,7 @@
 
   <div id="topbar"><div>三万卖艺点歌台</div><div class="right">卖艺中 · 点歌台</div></div>
   <div id="hud"></div>
+  <div id="daypart"><b>—</b></div>
 
   <div id="panel">
     <div class="h"><span class="dot"></span>点歌台 LIVE<span id="songcount" style="margin-left:auto;font-size:19px;color:#8d7fb8;letter-spacing:0">已唱 0 首</span></div>
@@ -94,6 +109,18 @@
   <div id="foot">点歌摊 · 直播中</div>
 </div>
 <script>
+async function loadDaypart(){
+  try{
+    const r=await fetch('/daypart',{cache:'no-store'}); const d=await r.json();
+    const cls=['dp-dusk','dp-dark','dp-black'].find(c=>c==='dp-'+d.light);
+    stage.classList.remove('dp-dusk','dp-dark','dp-black'); if(cls) stage.classList.add(cls);
+    const mins=Math.max(0,Math.round(d.seconds_left/60));
+    const left=mins>=60?`${Math.floor(mins/60)}小时${mins%60}分`:`${mins}分钟`;
+    document.querySelector('#daypart b').textContent=`${d.name} · 还有 ${left} → ${d.next}`;
+    document.body.dataset.daypart=d.id;
+  }catch(e){}
+}
+loadDaypart(); setInterval(loadDaypart,30000);
 const stage=document.getElementById('stage');
 function fit(){const s=Math.min(window.innerWidth/1920,window.innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
 window.addEventListener('resize',fit);fit();

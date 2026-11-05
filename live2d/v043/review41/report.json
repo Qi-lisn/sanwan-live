@@ -1,0 +1,99 @@
+{
+ "file": "live2d/v043/shoulder_fill_v41.png",
+ "geometry": {
+  "format": {
+   "size": [
+    1152,
+    1495
+   ],
+   "mode": "RGBA",
+   "ok": true
+  },
+  "coverage": {
+   "mask_px": 41408,
+   "covered": 41408,
+   "missing": 0,
+   "pct": 100.0,
+   "ok": true
+  },
+  "spill": {
+   "px": 0,
+   "pct": 0.0,
+   "ok": true
+  },
+  "motion": {
+   "ok": true,
+   "rows": [
+    {
+     "angle": 0,
+     "shoulder": 0,
+     "forearm": 0
+    },
+    {
+     "angle": -12,
+     "shoulder": 0,
+     "forearm": 10233
+    },
+    {
+     "angle": -25,
+     "shoulder": 1,
+     "forearm": 10769
+    },
+    {
+     "angle": -40,
+     "shoulder": 1,
+     "forearm": 10769
+    },
+    {
+     "angle": -60,
+     "shoulder": 1,
+     "forearm": 10769
+    }
+   ]
+  },
+  "pass": true
+ },
+ "art": {
+  "pocket_strip": {
+   "blobs": [
+    [
+     570,
+     636,
+     589,
+     663,
+     273
+    ],
+    [
+     540,
+     660,
+     577,
+     704,
+     592
+    ]
+   ],
+   "ref_blobs": 2,
+   "extra": [],
+   "ok": true
+  },
+  "double_hem": {
+   "over_px": 0,
+   "ok": true
+  },
+  "original_intact": {
+   "strip_diff": 0.0,
+   "strap_diff": 0.0,
+   "ok": true
+  },
+  "edge_seam": {
+   "edge_grad": 38.3,
+   "inner_grad": 12.4,
+   "ratio": 3.09,
+   "ok": false
+  },
+  "pass": false
+ },
+ "verdict": {
+  "geometry": "PASS",
+  "art": "FAIL"
+ }
+}

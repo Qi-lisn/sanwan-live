@@ -7,6 +7,7 @@ import sounddevice as sd
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import brain
 import behavior
+import dayparts
 
 ROOT = pathlib.Path(__file__).resolve().parent
 CACHE = ROOT / "cache"; CACHE.mkdir(exist_ok=True)
@@ -77,6 +78,7 @@ _gift_act = {"t": 0}
 GIFT_ACTION_COOLDOWN = 25
 _act_seen = {}
 _start_at = time.time()
+_last_block = {"id": None}
 ACTION_LINES = {"dance_cute": "行 给你跳一个", "wave": "挥一个 看见没",
                 "shy": "哎呀 别这么夸", "laugh": "你这么一说 我也想笑"}
 
@@ -268,6 +270,16 @@ def next_line():
         left = max(0, end_min - cur_min)
         return {"text": f"现在{now.tm_hour}点{now.tm_min:02d}分 离下班还有{left // 60}小时{left % 60}分", "comment": None}
 
+    blk = dayparts.block_at()
+    if blk["id"] != _last_block["id"]:
+        _last_block["id"] = blk["id"]
+        with _lock:
+            _priority.append({"text": blk["intro"], "comment": None})
+        return _priority.pop(0)
+    pack = dayparts.pack_lines(blk["id"])
+    if pack and random.random() < 0.55:
+        return {"text": random.choice(pack), "comment": None}
+
     r = random.random()
     try:
         meta = json.loads(SONGS_META.read_text(encoding="utf-8")).get("songs", [])
@@ -283,7 +295,7 @@ def next_line():
         song = random.choice(meta)
         return {"type": "song", "file": song["file"], "lyrics": song.get("lyrics", []),
                 "text": "给你唱一段", "title": song.get("title", "")}
-    if meta and r < 0.06:
+    if meta and r < blk.get("song_rate", 0.06):
         pool = [x for x in meta if x["file"] != _song_last["i"]] or meta
         song = random.choice(pool); _song_last["i"] = song["file"]
         return {"type": "song", "file": song["file"], "lyrics": song.get("lyrics", []),
@@ -669,6 +681,11 @@ class H(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"): self.path = "/stage_port.html"
         if self.path.startswith("/reply"): self.path = "/reply.html"
+        if self.path.startswith("/daypart"):
+            body = json.dumps(dayparts.snapshot(), ensure_ascii=False).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            return
         if self.path.startswith("/action_state"):
             snap = behavior.snapshot()
             snap["videos"] = _VIDEO_INFO

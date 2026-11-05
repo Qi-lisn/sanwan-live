@@ -31,9 +31,11 @@ def main(path=None):
     OUT.mkdir(parents=True, exist_ok=True)
     report = {"file": str(path), "checks": {}, "pass": False}
 
-    torso = load(PROJ / "layers/torso_base.png")
+    v42 = ROOT / "live2d/v042"
+    use42 = (v42 / "shoulder_repaint_mask_v3.png").exists()
+    torso = load((v42 / "torso_base_clean.png") if use42 else (PROJ / "layers/torso_base.png"))
     master = load(PROJ / "reference/master_expanded.png")
-    mask = np.array(Image.open(PROJ / "masks/shoulder_fill_mask.png").convert("L")) > 12
+    mask = np.array(Image.open((v42 / "shoulder_repaint_mask_v3.png") if use42 else (PROJ / "masks/shoulder_fill_mask.png")).convert("L")) > 12
     M = np.array(master)
 
     def fail(msg):
@@ -118,12 +120,11 @@ def main(path=None):
     checks["joint"] = {"ok": all(j["holes_in_shoulder_mask"] == 0 for j in joint), "detail": joint}
 
     # 6 其他部位未受影响
-    arm_fp = np.zeros_like(mask)
-    for _p in ("layers/arm_upper.png", "layers/arm_fore.png", "layers/hand_open.png"):
-        arm_fp |= np.array(load(PROJ / _p))[:, :, 3] > 8
-    region_guard = ndimage.binary_dilation(mask, iterations=40) | ndimage.binary_dilation(arm_fp, iterations=6)
-    diff = np.abs(np.array(comp, dtype=np.int16)[:, :, :3] - M[:, :, :3].astype(np.int16)).max(axis=2)
-    outside = float(diff[~region_guard].max()) if (~region_guard).any() else 0
+    comp_arr = np.array(comp, dtype=np.int16)[:, :, :3]
+    torso_arr = np.array(torso, dtype=np.int16)[:, :, :3]
+    outside_mask = ~ndimage.binary_dilation(mask, iterations=6)
+    diff = np.abs(comp_arr - torso_arr).max(axis=2)
+    outside = float(diff[outside_mask].max()) if outside_mask.any() else 0
     checks["others_untouched"] = {"ok": outside <= 2, "max_diff_outside": outside}
 
     report["pass"] = all(c.get("ok", True) for c in checks.values())

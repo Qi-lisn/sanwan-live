@@ -52,3 +52,4 @@ live2d/v04_project/masks/
 live2d/v04_project/tests/
 live2d/v04_project/reference/*.png
 .shoulder-cand/
+.shoulder-v02/

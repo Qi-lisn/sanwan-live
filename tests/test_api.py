@@ -49,6 +49,15 @@ class ApiTests(unittest.TestCase):
     def _state(self):
         return api("/action_state")[1]
 
+    def test_00_director_produces_lines(self):
+        """导演线程要能正常出词：出词停滞通常意味着 next_line 抛异常。"""
+        time.sleep(4)
+        lines0 = api("/stats")[1]["lines"]
+        self.assertGreaterEqual(lines0, 0)
+        time.sleep(6)
+        lines1 = api("/stats")[1]["lines"]
+        self.assertGreater(lines1, lines0, "导演没有继续出词（可能 next_line 异常）")
+
     def test_01_manual_action(self):
         code, d = api("/action", {"name": "nod"})
         self.assertEqual(code, 200)

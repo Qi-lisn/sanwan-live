@@ -11,7 +11,10 @@
 <section class="card"><h2>最近动作记录</h2><div id="events">暂无动作</div></section></div>
 <script>
 let refreshing=false;
-async function request(url,body){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||d.ok===false)throw Error(d.error||d.reason||'请求失败');return d}
+// 管理令牌：通过 ?token=xxx 打开一次，存本地；不会显示在页面上
+const TOKEN=(()=>{try{const q=new URLSearchParams(location.search).get('token');if(q){localStorage.setItem('sanwan_token',q);history.replaceState(null,'','control.html');return q}return localStorage.getItem('sanwan_token')||''}catch(e){return ''}})();
+function adminHeaders(){return TOKEN?{'Content-Type':'application/json','X-Control-Token':TOKEN}:{'Content-Type':'application/json'}}
+async function request(url,body){const r=await fetch(url,{method:'POST',headers:adminHeaders(),body:JSON.stringify(body)});const d=await r.json();if(r.status===403)throw Error('需要管理令牌：用 control.html?token=… 打开一次');if(!r.ok||d.ok===false)throw Error(d.error||d.reason||'请求失败');return d}
 async function send(name){try{await request('/action',{name});document.getElementById('feedback').textContent='已提交动作：'+name}catch(e){document.getElementById('feedback').textContent=e.message}refresh()}
 async function setFlag(input){try{await request('/control',{[input.id]:input.checked})}catch(e){document.getElementById('feedback').textContent=e.message}refresh()}
 async function refresh(){if(refreshing)return;refreshing=true;try{const [a,s,g]=await Promise.all([fetch('/action_state').then(r=>r.json()),fetch('/stats').then(r=>r.json()),fetch('/sing_state').then(r=>r.json()).catch(()=>({}))]);

@@ -37,6 +37,7 @@ assets/         立绘与图层
 ## V1 动作系统与控制台
 
 - 控制台：`http://127.0.0.1:8765/control.html`（本机运维用，别暴露到公网）
+- 管理令牌：设了 `CONTROL_TOKEN` 环境变量后，用 `control.html?token=你的令牌` 打开一次（记在 localStorage，不在页面上显示）
 - 动作：`wave` 挥手 / `happy` 开心 / `shy` 害羞 / `nod` 点头 / `laugh` 笑 / `dance_cute` 跳舞
 - 接口：`GET /action_state`、`POST /action {"name":"wave"}`、`POST /control {"auto_actions":true}`
 - 自动动作默认**关闭**；打开后弹幕含「跳个舞 / 挥手 / 可爱」会触发，带冷却

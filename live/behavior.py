@@ -104,22 +104,25 @@ def dispatch(name, source='operator'):
 
 
 def from_comment(text, nick='viewer'):
-    """Conservative local rules; no model action execution or opaque commands."""
+    """保守的本地规则：可同时命中多个动作时，跳过冷却中的那个。"""
     with _lock:
-        if not _state['auto_actions'] or _state['paused'] or not _state['enabled']:
+        if not auto_allowed():
             return None
+        cands = []
         if any(x in text for x in ('跳个舞', '跳舞', '舞蹈')):
-            action, cooldown = 'dance_cute', 35
-        elif any(x in text for x in ('你好', '打招呼', '挥手')):
-            action, cooldown = 'wave', 8
-        elif any(x in text for x in ('可爱', '好看', '喜欢你')):
-            action, cooldown = 'shy', 15
-        else:
-            return None
-        if time.monotonic() - _last_auto.get(action, -1e9) < cooldown:
-            return None
-        # Avoid interrupting songs with performances; pending requests are not stored in v1.
-        if action == 'dance_cute' and _state['activity'] == 'singing':
-            return None
-        _last_auto[action] = time.monotonic()
-        return _send(action, f'comment:{nick[:16]}')
+            cands.append(('dance_cute', 35))
+        if any(x in text for x in ('可爱', '好看', '喜欢你', '漂亮')):
+            cands.append(('shy', 15))
+        if any(x in text for x in ('你好', '打招呼', '挥手', '嗨')):
+            cands.append(('wave', 8))
+        if any(x in text for x in ('笑一个', '笑死', '搞笑')):
+            cands.append(('laugh', 12))
+        now = time.monotonic()
+        for action, cooldown in cands:
+            if action == 'dance_cute' and _state['activity'] == 'singing':
+                continue
+            if now - _last_auto.get(action, -1e9) < cooldown:
+                continue
+            _last_auto[action] = now
+            return _send(action, f'comment:{nick[:16]}')
+        return None

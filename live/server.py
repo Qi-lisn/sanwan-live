@@ -76,6 +76,9 @@ _last_report = {"t": 0}
 _gift_act = {"t": 0}
 GIFT_ACTION_COOLDOWN = 25
 _act_seen = {}
+_start_at = time.time()
+ACTION_LINES = {"dance_cute": "行 给你跳一个", "wave": "挥一个 看见没",
+                "shy": "哎呀 别这么夸", "laugh": "你这么一说 我也想笑"}
 
 _lock = threading.Lock()
 _comment_seq = [0]
@@ -143,14 +146,16 @@ def _ai_motion(text):
     if now - _ai_act["t"] < 12 or not behavior.auto_allowed():
         return
     motion = None
-    if any(k in text for k in ("哈哈", "笑死", "嘿嘿", "逗")):
+    if any(k in text for k in ("哈哈", "哈", "笑", "嘿嘿", "逗")):
         motion = "laugh"
-    elif any(k in text for k in ("害羞", "不好意思", "脸红")):
+    elif any(k in text for k in ("害羞", "不好意思", "脸红", "别夸", "夸我")):
         motion = "shy"
     elif any(k in text for k in ("你好", "嗨", "挥手", "打招呼")):
         motion = "wave"
     elif any(k in text for k in ("嗯嗯", "点头", "说得对")):
         motion = "nod"
+    if os.environ.get("SANWAN_DEBUG"):
+        print(f"ai_motion reply={text!r} -> {motion}", flush=True)
     if motion:
         _ai_act["t"] = now
         try:
@@ -547,6 +552,9 @@ class H(SimpleHTTPRequestHandler):
                         _act_seen[key] = now
                         try:
                             _r = behavior.from_comment(text, nick)
+                            if _r and _r.get("ok") and not hit and _r["event"]["name"] in ACTION_LINES:
+                                _priority.append({"text": ACTION_LINES[_r["event"]["name"]],
+                                                  "comment": {"nick": nick, "text": text}})
                             if os.environ.get("SANWAN_DEBUG"):
                                 print("action", text, "->", _r, flush=True)
                         except Exception as _e:

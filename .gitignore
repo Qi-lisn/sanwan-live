@@ -46,3 +46,4 @@ live2d/layers_v01/
 .layer-draft/
 live2d/guides/*.png
 live2d/*.zip
+.joint-v03/

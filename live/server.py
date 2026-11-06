@@ -470,6 +470,7 @@ def worthy(text):
 
 
 _BRAIN_CACHE = {"t": 0, "ok": False}
+_LLM_GATE = {"last": 0.0, "by": {}}
 
 
 def brain_on():
@@ -586,9 +587,22 @@ class H(SimpleHTTPRequestHandler):
                     if _kw in text:
                         hit = random.choice(_ans)
                         break
-                _ok = worthy(text)
+                if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
+                    # 外卖模式：几乎都值得接，只是要控频率
+                    _ok = worthy(text) or len(re.sub(r"\s+", "", text)) >= 3
+                else:
+                    _ok = worthy(text)
                 if hit is None and _ok:
                     _bo = brain_on()
+                    if _bo:
+                        _now = time.time()
+                        _gate = (_now - _LLM_GATE["last"] < 1.2 or
+                                 _now - _LLM_GATE["by"].get(nick, -1e9) < 6)
+                        if _gate:
+                            _bo = False
+                        else:
+                            _LLM_GATE["last"] = _now
+                            _LLM_GATE["by"][nick] = _now
                     if _bo:
                         if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
                             hit = brain_delivery.reply(nick, text, delivery.snapshot())

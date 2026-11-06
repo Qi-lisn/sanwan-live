@@ -26,4 +26,5 @@ document.getElementById('activity').textContent=a.activity;document.getElementBy
 const events=document.getElementById('events');events.replaceChildren();for(const e of [...a.recent].reverse()){const div=document.createElement('div');div.className='event';div.textContent=new Date(e.at*1000).toLocaleTimeString()+' · '+e.name+' · '+e.source;events.appendChild(div)}
 }catch(e){document.getElementById('feedback').textContent='控制台暂时无法连接后端：'+e.message}finally{refreshing=false}}
 refresh();setInterval(refresh,1000);
-</script></body></html>
+</script>
+<script src="city_assets/city_control.js"></script></body></html>

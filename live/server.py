@@ -9,6 +9,8 @@ import brain
 import behavior
 import dayparts
 import delivery
+import interaction
+import brain_delivery
 
 ROOT = pathlib.Path(__file__).resolve().parent
 CACHE = ROOT / "cache"; CACHE.mkdir(exist_ok=True)
@@ -247,6 +249,8 @@ def next_line():
         INJECT.unlink()
         if lines:
             return {"text": lines[0], "comment": None}
+    if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
+        return {"text": interaction.scene_line(delivery.snapshot()), "comment": None}
     if _seg is not None:
         if _seg_i < len(_seg["lines"]):
             line = _seg["lines"][_seg_i]; _seg_i += 1
@@ -560,6 +564,23 @@ class H(SimpleHTTPRequestHandler):
                         self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
                         self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
                         return
+                if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
+                    game = interaction.handle_comment(nick, text, delivery)
+                    if game is not None:
+                        heard = bool(game.get("reply"))
+                        if heard:
+                            with _lock:
+                                _priority.append({"text": game["reply"],
+                                                  "comment": {"nick": nick, "text": text}})
+                                _stats["replies"] += 1
+                        payload = json.dumps({"ok": True, "replied": heard,
+                                              "interaction": game.get("kind")},
+                                             ensure_ascii=False).encode()
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json; charset=utf-8")
+                        self.send_header("Content-Length", str(len(payload)))
+                        self.end_headers(); self.wfile.write(payload)
+                        return
                 _bo = False
                 for _kw, _ans in TRIGGERS.items():
                     if _kw in text:
@@ -569,7 +590,10 @@ class H(SimpleHTTPRequestHandler):
                 if hit is None and _ok:
                     _bo = brain_on()
                     if _bo:
-                        hit = brain.reply(nick, text)
+                        if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
+                            hit = brain_delivery.reply(nick, text, delivery.snapshot())
+                        else:
+                            hit = brain.reply(nick, text)
                 open("/tmp/comment.log", "a").write(
                     f"{time.strftime('%H:%M:%S')} nick={nick} text={text} brain={_bo} worthy={_ok} hit={hit!r} dt={time.time()-_t0:.2f}\n")
                 if hit is None and _ok:

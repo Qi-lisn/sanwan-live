@@ -1,133 +1,139 @@
-<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>三万跑单</title>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三万大肥鱼 · 海滨外卖城</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:#05070d;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB",sans-serif}
-#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;overflow:hidden}
-#bg,#lights{position:absolute;inset:0;width:1920px;height:1080px;object-fit:cover;user-select:none;-webkit-user-drag:none}
-#lights{mix-blend-mode:screen;animation:flicker 6s infinite ease-in-out}
-#bg,#bg2{transition:opacity .6s}
-@keyframes flicker{0%,100%{opacity:.85}23%{opacity:.95}41%{opacity:.72}57%{opacity:.9}73%{opacity:.8}}
-#vign{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(4,6,14,.45) 100%);pointer-events:none}
-#scooter{position:absolute;width:230px;height:230px;transform:translate(-50%,-100%);z-index:5;
-  filter:drop-shadow(0 10px 18px rgba(0,0,0,.5))}
-#scooter img{width:100%;height:100%;display:block}
-#light{position:absolute;width:360px;height:150px;transform-origin:0 50%;pointer-events:none;z-index:4;opacity:.9;
-  background:radial-gradient(ellipse at 0 50%,rgba(255,226,160,.5),rgba(255,200,120,.14) 45%,transparent 72%);filter:blur(4px)}
-#hud{position:absolute;left:64px;top:46px;color:#e6ecff;z-index:6;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-#hud .big{font-size:34px;letter-spacing:8px;color:#fff}
-#hud .sub{font-size:19px;color:#c3cdea;margin-top:10px;letter-spacing:2px}
-#badge{position:absolute;left:64px;top:134px;font-size:18px;color:#dbe2ff;letter-spacing:3px;z-index:6;
-  background:rgba(14,18,32,.6);border:1px solid rgba(150,170,230,.35);border-radius:999px;padding:8px 20px;backdrop-filter:blur(6px)}
-#card{position:absolute;right:62px;top:118px;width:420px;z-index:6;
-  background:linear-gradient(160deg,rgba(24,30,52,.9),rgba(12,16,30,.92));
-  border:1px solid rgba(140,160,235,.35);border-radius:22px;padding:24px 26px;color:#eef2ff;
-  box-shadow:0 24px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(8px)}
-#card .k{font-size:15px;color:#93a0c8;letter-spacing:4px}
-#card .good{font-size:40px;margin:10px 0 2px;color:#fff}
-#card .to{font-size:22px;color:#ffd08a;margin-bottom:12px}
-#card .row{display:flex;justify-content:space-between;font-size:19px;color:#c3cdea;margin-top:9px}
-#card .bar{height:12px;border-radius:8px;background:#202844;margin-top:16px;overflow:hidden}
-#card .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd08a,#ff9f43);transition:width .9s linear}
-#card .pay{font-size:30px;color:#ffd08a}
-#msg{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);font-size:38px;color:#fff;z-index:7;
-  background:rgba(8,12,22,.78);border:1px solid rgba(160,180,240,.35);border-radius:999px;padding:12px 42px;
-  letter-spacing:2px;opacity:0;transition:opacity .35s;text-shadow:0 2px 8px rgba(0,0,0,.6)}
-#tag{position:absolute;left:64px;bottom:42px;font-size:18px;color:#9aa6cc;letter-spacing:4px;z-index:6;text-shadow:0 2px 8px rgba(0,0,0,.7)}
-</style></head><body>
-<div id="stage">
-  <img id="bg" src="street_bg.jpg" alt="">
-  <img id="lights" src="street_lights.png" alt="">
-  <div id="vign"></div>
-  <div id="light"></div>
-  <div id="scooter"></div>
-  <div id="hud"><div class="big">三万跑单</div><div class="sub" id="sub">今日 0 单 · 赚 0.0 元</div></div>
-  <div id="badge">午高峰 · 外卖专线</div>
-  <div id="card">
-    <div class="k">当前订单</div>
-    <div class="good" id="good">等单中</div>
-    <div class="to" id="to">—</div>
-    <div class="row"><span>剩余时间</span><b id="left">—</b></div>
-    <div class="row"><span>本单收入</span><b class="pay" id="pay">—</b></div>
-    <div class="bar"><i id="bar"></i></div>
-  </div>
-  <div id="msg"></div>
-  <div id="tag">三万 · 工位 30000 外送</div>
-</div>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#0b1730;overflow:hidden;font-family:Inter,'Microsoft YaHei',system-ui,sans-serif}
+#viewport{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+#stage{position:absolute;width:1672px;height:941px;transform-origin:center center;overflow:hidden;background:#8ad6fa}
+#cityBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;pointer-events:none}
+#roadCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#rider{position:absolute;left:0;top:0;width:95px;height:95px;z-index:5;transform:translate(-50%,-82%);pointer-events:none;filter:drop-shadow(0 4px 4px #18304b77);will-change:left,top,transform}
+#rider.walking{width:78px;height:78px}#rider img{width:100%;height:100%;display:block;object-fit:contain}
+#rider .shadow{position:absolute;bottom:8px;left:30%;width:40%;height:8%;background:#0003;border-radius:100%;filter:blur(3px);z-index:-1}
+#riderImg.reacting{animation:fishReact .22s ease-in-out 5 alternate}
+@keyframes fishReact{to{transform:translateY(-9px) rotate(2deg)}}
+.top{position:absolute;top:23px;left:26px;right:26px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:7}
+.banner,.livetag{box-shadow:0 8px 26px #18223b27;backdrop-filter:blur(12px)}
+.banner{background:#ffffffed;padding:13px 18px;border:1px solid #fff;border-radius:16px;color:#263959}
+.banner b{font-size:20px}.banner small{display:block;margin-top:6px;color:#5d7296;font-size:12px}
+.livetag{display:flex;align-items:center;gap:9px;border:1px solid #ffffff70;border-radius:99px;padding:11px 16px;background:#172c4edf;color:#fff;font-weight:700;font-size:13px}
+.livetag:before{content:'';width:9px;height:9px;border-radius:50%;background:#ff5070;box-shadow:0 0 0 5px #ff52702b}
+#statusbar{position:absolute;bottom:24px;left:24px;z-index:7;min-width:330px;width:410px;max-width:39%;padding:15px 18px;background:#152440e8;color:#fff;border-radius:19px;border:1px solid #d1e1ff42;box-shadow:0 15px 34px #10243b42;backdrop-filter:blur(12px)}
+#badge{display:inline-block;background:#6a69d54a;color:#d4dfff;padding:5px 9px;font-size:11px;border-radius:8px;font-weight:800}
+#orderName{font-size:20px;font-weight:850;margin-top:10px}#destination{font-size:13px;color:#bcd0e8;margin-top:7px}
+#progressTrack{margin:13px 0 8px;background:#66759466;border-radius:20px;height:7px;overflow:hidden}#progressBar{width:0;height:100%;background:linear-gradient(90deg,#ffbd7d,#a98bff,#5ed6ff);border-radius:20px;transition:width .8s linear}
+#statusFooter{font-size:12px;display:flex;justify-content:space-between;color:#9eb9d6}
+#stats{position:absolute;bottom:25px;right:24px;z-index:7;display:flex;gap:9px;pointer-events:none}
+.stat{min-width:112px;background:#ffffffec;border-radius:14px;border:1px solid #fff;box-shadow:0 9px 28px #19324a24;padding:11px 15px;color:#23405a}
+.stat b{font-size:23px;display:block}.stat span{font-size:11px;color:#7189a2;display:block;margin-top:4px}
+#bubble{position:absolute;z-index:8;left:50%;top:20%;padding:11px 20px;background:#24365ce6;color:#fff;border:1px solid #d6e0ff65;border-radius:99px;font-weight:800;font-size:18px;opacity:0;transform:translateX(-50%) translateY(-10px);transition:opacity .25s,transform .25s;box-shadow:0 9px 28px #0e274c55;pointer-events:none}
+#bubble.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#notice{position:absolute;top:88px;right:24px;font-size:11px;border-radius:7px;color:#ffebbf;background:#263047da;padding:7px 10px;z-index:9;display:none}
+#night{position:absolute;inset:0;background:#1423444d;mix-blend-mode:multiply;pointer-events:none;display:none;z-index:6}
+#credits{position:absolute;left:26px;bottom:180px;z-index:7;background:#ffffffb5;color:#45627e;border-radius:8px;padding:5px 9px;font-size:10px}
+</style>
+</head>
+<body>
+<div id="viewport"><main id="stage">
+  <img id="cityBg" src="city_assets/city_map.png" alt="海滨城市地图">
+  <canvas id="roadCanvas" width="1672" height="941"></canvas>
+  <div id="rider"><div class="shadow"></div><img id="riderImg" src="city_assets/ride_0.png" alt="大肥鱼骑手"></div>
+  <div id="night"></div>
+  <div class="top"><div class="banner"><b>🐟 三万大肥鱼 · 外卖人生</b><small id="caption">海滨外卖城 · 真实 DSH 订单驱动 · AI 虚拟主播</small></div><div class="livetag">配送直播中</div></div>
+  <div id="notice"></div><div id="bubble"></div>
+  <section id="statusbar"><span id="badge">等待接单</span><div id="orderName">大肥鱼正在摸鱼 🐟</div><div id="destination">送外卖这件事，也是从摸鱼开始的。</div><div id="progressTrack"><div id="progressBar"></div></div><div id="statusFooter"><span id="distance">等待派单</span><span id="left">—</span></div></section>
+  <section id="stats"><div class="stat"><b id="delivered">0</b><span>完成订单</span></div><div class="stat"><b id="earned">¥ 0.0</b><span>游戏模拟收入</span></div><div class="stat"><b id="late">0</b><span>超时订单</span></div></section>
+  <div id="credits">游戏化模拟场景 · 非真实接单</div>
+</main></div>
 <script>
-const stage=document.getElementById('stage');
-function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
-addEventListener('resize',fit);fit();
-
-/* 楼中心 x（从底图实测） */
-const SHOPS={
-  '公司':265, '便利店':556, '小区':802, '学校':1105, '医院':1369, '商场':1649
+'use strict';
+(()=>{
+const S={w:1672,h:941}, $=s=>document.querySelector(s), stage=$('#stage'),cv=$('#roadCanvas'),ctx=cv.getContext('2d');
+const rider=$('#rider'),riderImg=$('#riderImg');
+const qs=new URLSearchParams(location.search), demo=qs.get('demo')==='1';
+function fit(){let scale=Math.min(innerWidth/S.w,innerHeight/S.h);stage.style.transform='scale('+scale+')'}window.addEventListener('resize',fit);fit();
+const SPRITES={ride:[0,1,2,3].map(i=>`city_assets/ride_${i}.png`),walk:[0,1,2,3].map(i=>`city_assets/walk_${i}.png`)};
+for(let a of Object.values(SPRITES))a.forEach(s=>{const im=new Image();im.src=s});
+// Points are surveyed against the 1672x941 concept-map pixels. These are visual game positions, not GPS coordinates.
+const HUB=[1272,576], PICKUP=[685,431];
+const LOCATIONS={
+  '便利店':{id:'shop',point:[555,640], route:[[685,431],[749,434],[700,491],[657,545],[600,600],[555,640]]},
+  '小区':{id:'community',point:[1257,237],route:[[685,431],[790,428],[885,437],[990,453],[1085,475],[1175,504],[1205,493],[1279,450],[1280,369],[1237,324],[1235,276],[1257,237]]},
+  '学校':{id:'school',point:[732,180],route:[[685,431],[744,400],[815,346],[850,315],[826,278],[765,245],[732,180]]},
+  '医院':{id:'hospital',point:[300,434],route:[[685,431],[606,474],[532,481],[472,450],[400,437],[350,417],[300,434]]},
+  '商场':{id:'mall',point:[369,552],route:[[685,431],[606,474],[554,518],[482,540],[425,556],[369,552]]},
+  '公司':{id:'office',point:[1342,583],route:[[685,431],[789,429],[899,442],[1010,460],[1100,480],[1170,520],[1263,562],[1342,583]]}
 };
-const START_X=265, LANE_Y=918;
-
-const sc=document.getElementById('scooter'), LIGHT=document.getElementById('light');
-sc.innerHTML=`<img id="riderImg" src="sprites/ride_1.png" alt="">`;
-
-const rideFrames=['sprites/ride_1.png','sprites/ride_2.png','sprites/ride_3.png'];
-const walkFrames=['sprites/walk_1.png','sprites/walk_2.png'];
-let fi=0, mode='ride', walkUntil=0;
-setInterval(()=>{
-  const img=document.getElementById('riderImg'); if(!img) return;
-  mode = Date.now() < walkUntil ? 'walk' : 'ride';
-  if(mode==='walk'){ img.src=walkFrames[fi%2]; fi++; }
-  else { img.src=rideFrames[fi%3]; fi++; }
-},140);
-
-let lastSeq=-1, lastStatus='', lastLeft=999;
-let curLight='night';
-async function loadBg(){
-  try{
-    const d=await (await fetch('/daypart',{cache:'no-store'})).json();
-    const map={day:'street_bg_day.jpg', dusk:'street_bg_dusk.jpg', warm:'street_bg.jpg', dark:'street_bg.jpg', black:'street_bg.jpg'};
-    const forced=new URLSearchParams(location.search).get('bg');
-    const src=forced?('street_bg_'+forced+'.jpg'):(map[d.light]||'street_bg.jpg');
-    if(src!==curLight){
-      const b=document.getElementById('bg');
-      if(b.getAttribute('src')!==src){ b.style.opacity=0; setTimeout(()=>{b.src=src; b.style.opacity=1;},200); }
-      curLight=src;
-      document.getElementById('badge').textContent=`${d.name} · 外卖专线`;
-    }
-  }catch(e){}
+const HUB_ROUTE=[[1272,576],[1196,532],[1090,479],[994,456],[891,443],[796,438],[685,431]];
+function pathLen(points){return points.slice(1).reduce((a,p,i)=>a+Math.hypot(p[0]-points[i][0],p[1]-points[i][1]),0)}
+function sample(points,t){let total=pathLen(points),d=Math.max(0,Math.min(1,t))*total;for(let i=1;i<points.length;i++){let p=points[i-1],q=points[i],len=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<=len||i===points.length-1){let k=len?Math.max(0,Math.min(1,d/len)):0;return {x:p[0]+(q[0]-p[0])*k,y:p[1]+(q[1]-p[1])*k,angle:Math.atan2(q[1]-p[1],q[0]-p[0])}}d-=len}return {x:points[0][0],y:points[0][1],angle:0}}
+let state=null, lastSeq=-1,lastStatus='idle',lastResult='',ticker=0,lastAt=performance.now(), displayed={x:HUB[0],y:HUB[1],angle:0},latest={x:HUB[0],y:HUB[1],angle:0};
+const mock={phase:'idle',progress:0,seq:0,dest:'小区',earned:0,delivered:0,late:0,limit:45,started:0,now:0};
+function simulate(dt){mock.now+=dt;if(mock.phase==='idle'){mock.phase='accepted';mock.progress=0;mock.seq++;mock.started=mock.now}
+ else if(mock.phase==='accepted'){mock.progress+=dt/8;if(mock.progress>=1){mock.progress=0;mock.phase='carrying'}}
+ else if(mock.phase==='carrying'){mock.progress+=dt/18;if(mock.progress>=1){mock.phase='idle';mock.progress=0;mock.earned+=6.8;mock.delivered++}}
+ return {status:mock.phase,progress:mock.phase==='accepted'?mock.progress*.25:mock.phase==='carrying'?.25+mock.progress*.75:0,phase_progress:mock.progress,earned:mock.earned,delivered:mock.delivered,late:mock.late,total:mock.seq,last_result:mock.phase==='idle'&&mock.delivered?'送达成功': '',left:Math.max(0,Math.round(45-(mock.now-mock.started))),order:mock.phase==='idle'?null:{seq:mock.seq,good:'奶茶',place_name:mock.dest,x:1180,y:700,pay:6.8,limit:45}};
 }
-loadBg(); setInterval(loadBg,30000);
-function showMsg(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>m.style.opacity=0,4200)}
-
-async function tick(){
-  let d;try{d=await (await fetch('/delivery',{cache:'no-store'})).json()}catch(e){return}
-  document.getElementById('sub').textContent=`今日 ${d.delivered} 单 · 赚 ${d.earned.toFixed(1)} 元 · 超时 ${d.late} 次`+(d.wage<1?` · ${d.rating}`:'');
-  if(d.order){
-    const o=d.order, tx=SHOPS[o.place_name]||960;
-    const p=Math.min(1,d.progress), x=START_X+(tx-START_X)*p;
-    document.getElementById('good').textContent=o.good;
-    document.getElementById('to').textContent='送到 '+o.place_name;
-    document.getElementById('left').textContent=d.left+' 秒';
-    if(lastLeft-d.left>5) showMsg('加急 少十五秒');
-    lastLeft=d.left;
-    document.getElementById('pay').textContent='+'+o.pay.toFixed(1);
-    document.getElementById('bar').style.width=Math.round(p*100)+'%';
-    const walking = Date.now() < walkUntil;
-    sc.style.left=x+'px'; sc.style.top=(walking?806:LANE_Y)+'px';
-    const dir=tx>=START_X?1:-1;
-    sc.style.transform=`translate(-50%,-100%) scaleX(${dir})`;
-    LIGHT.style.left=(x+dir*58)+'px'; LIGHT.style.top=(LANE_Y-74)+'px';
-    LIGHT.style.transform=`scaleX(${dir})`;
-    LIGHT.style.opacity=.9;
-    if(o.seq!==lastSeq){lastSeq=o.seq;mode='ride';walkUntil=0;showMsg('接到单 一份'+o.good+' 送'+o.place_name)}
-  }else{
-    sc.style.left=START_X+'px'; sc.style.top=LANE_Y+'px'; sc.style.transform='translate(-50%,-100%)';
-    LIGHT.style.opacity=0;
-    document.getElementById('good').textContent='等单中';
-    document.getElementById('to').textContent='—';
-    document.getElementById('left').textContent='—'; lastLeft=999;
-    document.getElementById('pay').textContent='—';
-    document.getElementById('bar').style.width='0%';
-    if(lastStatus!=='idle'&&d.last_result){showMsg(d.last_result); mode='walk'; walkUntil=Date.now()+2600;}
-  }
-  lastStatus=d.status;
+function showMessage(message){const el=$('#bubble');el.textContent=message;el.classList.add('show');clearTimeout(showMessage.t);showMessage.t=setTimeout(()=>el.classList.remove('show'),3000)}
+function update(d){if(!d||typeof d!=='object')return;state=d;
+ const hasOrder=!!d.order, location=hasOrder?(LOCATIONS[d.order.place_name]||LOCATIONS['商场']):null;
+ const isPickup=d.status==='accepted', isCarrying=d.status==='carrying';
+ let phase=Number(d.phase_progress);
+ if(!Number.isFinite(phase)){const progress=Number(d.progress)||0;phase=isPickup?Math.min(1,progress/.25):isCarrying?Math.max(0,Math.min(1,(progress-.25)/.75)):0}
+ phase=Math.max(0,Math.min(1,phase));
+ if(hasOrder){const points=isPickup?HUB_ROUTE:location.route;latest=sample(points,phase)}else{latest=sample(HUB_ROUTE,0)}
+ const seq=hasOrder?d.order.seq:-1;
+ if(seq!==-1&&seq!==lastSeq){showMessage('📦 新订单！'+d.order.good+' → '+d.order.place_name);lastSeq=seq;}
+ if(d.status==='carrying'&&lastStatus==='accepted'){showMessage('🥤 已取餐，向'+d.order.place_name+'出发！')}
+ if(d.status==='idle'&&lastStatus!=='idle'&&d.last_result&&d.last_result!==lastResult){showMessage('✅ '+d.last_result);lastResult=d.last_result;}
+ if(d.status==='accepted'){$('#badge').textContent='前往商家';$('#orderName').textContent='去取 '+d.order.good;$('#destination').textContent='取餐点 · 波波奶茶店'}
+ else if(d.status==='carrying'){$('#badge').textContent='配送途中';$('#orderName').textContent='配送 '+d.order.good;$('#destination').textContent='目的地 · '+d.order.place_name}
+ else{$('#badge').textContent='等待接单';$('#orderName').textContent='大肥鱼正在摸鱼 🐟';$('#destination').textContent='等单中 · 欢迎弹幕互动'}
+ $('#progressBar').style.width=(hasOrder?Math.round(isPickup?phase*28:28+phase*72):0)+'%';
+ $('#distance').textContent=hasOrder?(isPickup?'前往商家':'前往 '+d.order.place_name):'等待派单';
+ $('#left').textContent=hasOrder?String(d.left??'—')+' 秒':'—';
+ $('#delivered').textContent=d.delivered??0;$('#earned').textContent='¥ '+Number(d.earned??0).toFixed(1);$('#late').textContent=d.late??0;
+ lastStatus=d.status||'idle';
 }
-tick();setInterval(tick,1000);
+function drawRoute(){const d=state;if(!d||!d.order)return;const area=LOCATIONS[d.order.place_name]||LOCATIONS['商场'];const points=d.status==='accepted'?HUB_ROUTE:area.route;
+ ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowColor='#526affaa';ctx.shadowBlur=13;
+ let g=ctx.createLinearGradient(points[0][0],points[0][1],points.at(-1)[0],points.at(-1)[1]);g.addColorStop(0,'#aa76ff');g.addColorStop(1,'#47c7ff');ctx.strokeStyle=g;ctx.lineWidth=8;
+ ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.stroke();ctx.restore();
+ let point=points[points.length-1];ctx.save();ctx.beginPath();ctx.arc(point[0],point[1],18,0,Math.PI*2);ctx.fillStyle='#62c8ff5a';ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.stroke();ctx.font='25px sans-serif';ctx.textAlign='center';ctx.fillText(d.status==='accepted'?'📦':'🏠',point[0],point[1]-23);ctx.restore();}
+function animate(now){let dt=Math.min(.1,(now-lastAt)/1000);lastAt=now;ticker+=dt;
+ if(demo){const d=simulate(dt);update(d)}
+ displayed.x+=(latest.x-displayed.x)*Math.min(1,dt*5);displayed.y+=(latest.y-displayed.y)*Math.min(1,dt*5);displayed.angle=latest.angle;
+ ctx.clearRect(0,0,S.w,S.h);drawRoute();const walking=state&&(state.status==='idle'||state.status==='carrying'&&Number(state.phase_progress)>.995);rider.classList.toggle('walking',!!walking);
+ const frames=walking?SPRITES.walk:SPRITES.ride;const frame=Math.floor(ticker*(walking?5:8))%4;const next=frames[frame];if(riderImg.getAttribute('src')!==next)riderImg.setAttribute('src',next);
+ rider.style.left=displayed.x+'px';rider.style.top=displayed.y+'px';const reverse=Math.cos(displayed.angle)<-.15;
+ rider.style.transform='translate(-50%,-82%) scaleX('+(reverse?-1:1)+')';
+ requestAnimationFrame(animate)}
+async function poll(){if(demo)return;try{const r=await fetch('/delivery',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);update(await r.json());$('#notice').style.display='none'}catch(e){const el=$('#notice');el.style.display='block';el.textContent='DSH 服务未连接：等待 /delivery';}finally{setTimeout(poll,850)}}
+// DSH 原动作系统继续工作：在地图舞台上用短动画做出反应，不重建动作后端。
+let lastActionSeq=-1;
+async function pollActions(){
+ if(demo) return;
+ try{
+   const r=await fetch('/action_state',{cache:'no-store'}); if(!r.ok) throw Error('unavailable');
+   const d=await r.json();
+   if(lastActionSeq!==-1 && d.seq>lastActionSeq && d.recent && d.recent.length){
+      const event=d.recent[d.recent.length-1];
+      if(event.name!=='idle'){
+        const names={wave:'挥手',happy:'开心',shy:'害羞',nod:'点头',laugh:'笑了',dance_cute:'跳个舞'};
+        showMessage('🐟 大肥鱼：'+(names[event.name]||event.name));
+        riderImg.classList.remove('reacting'); void riderImg.offsetWidth; riderImg.classList.add('reacting');
+        setTimeout(()=>riderImg.classList.remove('reacting'),1200);
+      }
+   }
+   lastActionSeq=d.seq;
+ }catch(_){ /* 保留外卖场景，不依赖动作接口可用性 */ }
+ finally{setTimeout(pollActions,500)}
+}
+if(qs.get('night')==='1')$('#night').style.display='block';
+$('#cityBg').addEventListener('error',()=>{$('#notice').textContent='城市图片未加载：请检查 city_assets/city_map.png';$('#notice').style.display='block'});
+if(demo){$('#caption').textContent='本地动画彩排模式 · 非 DSH 真实接口';showMessage('🎬 进入演示模式')}else {poll();pollActions();}requestAnimationFrame(animate);
+})();
 </script></body></html>

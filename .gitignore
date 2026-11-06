@@ -61,3 +61,9 @@ live2d/v05/
 .fa1/
 .fa2/
 .v41/
+.v3pkg/
+live/*.bak
+live/*.v3
+live/*.before-interaction.bak
+live/server.py.bak
+live/_backup_v3/

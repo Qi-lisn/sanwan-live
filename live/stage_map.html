@@ -72,25 +72,35 @@ const NODES={
   G:[835,300],  H:[500,300],  I:[1250,300],      // 上横路
   J:[160,210],  K:[1445,430], L:[1320,235], M:[1130,235],   // 公司/商场/学校/小区
   N:[610,365],  O:[760,330],  P:[1150,345], Q:[505,600],
-  R:[1010,230]                                    // 医院（上排中间那栋白楼）
+  R:[1010,230],                                   // 医院（上排中间那栋白楼）
+  U:[1130,300], V:[1445,520]                      // 小区路口、商场前路
 };
 const EDGES=[['A','B'],['A','C'],['A','D'],['D','E'],['D','F'],['D','G'],
              ['E','H'],['F','I'],['G','H'],['G','I'],['H','J'],['I','K'],
              ['I','L'],['I','M'],['N','H'],['N','G'],['G','O'],['P','I'],['P','F'],['B','Q'],
-             ['D','Q'],['G','L'],['R','G'],['R','I']];
+             ['D','Q'],['G','L'],['R','G'],['R','I'],['U','G'],['U','I'],['U','M'],['V','F'],['V','K']];
 const START=[835,700];
 const PLACE_NODE={'便利店':'Q','小区':'M','学校':'L','医院':'R','商场':'K','公司':'J'};
 const SHOP_NODE='N';
 
 function bfsPath(from,to){
+  // Dijkstra：按实际像素距离选最短，避免"边数少但绕远"的路径
   const adj={}; for(const [a,b] of EDGES){ (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); }
-  const q=[[from]], seen=new Set([from]);
-  while(q.length){
-    const path=q.shift(), last=path[path.length-1];
-    if(last===to) return path.map(k=>NODES[k]);
-    for(const nb of (adj[last]||[])) if(!seen.has(nb)){ seen.add(nb); q.push([...path,nb]); }
+  const dist={}, prev={}, seen=new Set();
+  dist[from]=0;
+  while(true){
+    let u=null,best=Infinity;
+    for(const k in dist) if(!seen.has(k)&&dist[k]<best){best=dist[k];u=k}
+    if(u===null||u===to) break;
+    seen.add(u);
+    for(const v of (adj[u]||[])){
+      const w=Math.hypot(NODES[v][0]-NODES[u][0], NODES[v][1]-NODES[u][1]);
+      if(dist[v]===undefined||dist[u]+w<dist[v]){dist[v]=dist[u]+w;prev[v]=u}
+    }
   }
-  return [NODES[from], NODES[to]];
+  const path=[]; let cur=to;
+  while(cur!==undefined){ path.unshift(cur); cur=prev[cur] }
+  return path.length>1?path.map(k=>NODES[k]):[NODES[from],NODES[to]];
 }
 
 const HUB=START, PICKUP=NODES[SHOP_NODE];

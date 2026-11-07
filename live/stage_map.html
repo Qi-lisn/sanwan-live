@@ -65,16 +65,42 @@ function fit(){let scale=Math.min(innerWidth/S.w,innerHeight/S.h);stage.style.tr
 const SPRITES={ride:[0,1,2,3].map(i=>`city_assets/ride_${i}.png`),walk:[0,1,2,3].map(i=>`city_assets/walk_${i}.png`)};
 for(let a of Object.values(SPRITES))a.forEach(s=>{const im=new Image();im.src=s});
 // Points are surveyed against the 1672x941 concept-map pixels. These are visual game positions, not GPS coordinates.
-const HUB=[1272,576], PICKUP=[685,431];
-const LOCATIONS={
-  '便利店':{id:'shop',point:[555,640], route:[[685,431],[749,434],[700,491],[657,545],[600,600],[555,640]]},
-  '小区':{id:'community',point:[1257,237],route:[[685,431],[790,428],[885,437],[990,453],[1085,475],[1175,504],[1205,493],[1279,450],[1280,369],[1237,324],[1235,276],[1257,237]]},
-  '学校':{id:'school',point:[732,180],route:[[685,431],[744,400],[815,346],[850,315],[826,278],[765,245],[732,180]]},
-  '医院':{id:'hospital',point:[300,434],route:[[685,431],[606,474],[532,481],[472,450],[400,437],[350,417],[300,434]]},
-  '商场':{id:'mall',point:[369,552],route:[[685,431],[606,474],[554,518],[482,540],[425,556],[369,552]]},
-  '公司':{id:'office',point:[1342,583],route:[[685,431],[789,429],[899,442],[1010,460],[1100,480],[1170,520],[1263,562],[1342,583]]}
+// —— 路网（按 1672×941 概念图实测，节点只放在道路上）——
+const NODES={
+  A:[835,700],  B:[500,700],  C:[1250,700],      // 滨水大道
+  D:[835,520],  E:[500,520],  F:[1250,520],      // 中横路
+  G:[835,300],  H:[500,300],  I:[1250,300],      // 上横路
+  J:[160,210],  K:[1445,430], L:[1320,235], M:[1130,235],   // 公司/商场/学校/小区
+  N:[610,365],  O:[760,330],  P:[1150,345], Q:[505,600],
+  R:[1010,230]                                    // 医院（上排中间那栋白楼）
 };
-const HUB_ROUTE=[[1272,576],[1196,532],[1090,479],[994,456],[891,443],[796,438],[685,431]];
+const EDGES=[['A','B'],['A','C'],['A','D'],['D','E'],['D','F'],['D','G'],
+             ['E','H'],['F','I'],['G','H'],['G','I'],['H','J'],['I','K'],
+             ['I','L'],['I','M'],['N','H'],['N','G'],['G','O'],['P','I'],['P','F'],['B','Q'],
+             ['D','Q'],['G','L'],['R','G'],['R','I']];
+const START=[835,700];
+const PLACE_NODE={'便利店':'Q','小区':'M','学校':'L','医院':'R','商场':'K','公司':'J'};
+const SHOP_NODE='N';
+
+function bfsPath(from,to){
+  const adj={}; for(const [a,b] of EDGES){ (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); }
+  const q=[[from]], seen=new Set([from]);
+  while(q.length){
+    const path=q.shift(), last=path[path.length-1];
+    if(last===to) return path.map(k=>NODES[k]);
+    for(const nb of (adj[last]||[])) if(!seen.has(nb)){ seen.add(nb); q.push([...path,nb]); }
+  }
+  return [NODES[from], NODES[to]];
+}
+
+const HUB=START, PICKUP=NODES[SHOP_NODE];
+const HUB_ROUTE=bfsPath('A',SHOP_NODE);
+const LOCATIONS={};
+for(const name of ['便利店','小区','学校','医院','商场','公司']){
+  const node=PLACE_NODE[name]||'M';
+  LOCATIONS[name]={id:name, point:NODES[node], route:bfsPath(SHOP_NODE,node)};
+}
+
 function pathLen(points){return points.slice(1).reduce((a,p,i)=>a+Math.hypot(p[0]-points[i][0],p[1]-points[i][1]),0)}
 function sample(points,t){let total=pathLen(points),d=Math.max(0,Math.min(1,t))*total;for(let i=1;i<points.length;i++){let p=points[i-1],q=points[i],len=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<=len||i===points.length-1){let k=len?Math.max(0,Math.min(1,d/len)):0;return {x:p[0]+(q[0]-p[0])*k,y:p[1]+(q[1]-p[1])*k,angle:Math.atan2(q[1]-p[1],q[0]-p[0])}}d-=len}return {x:points[0][0],y:points[0][1],angle:0}}
 let state=null, lastSeq=-1,lastStatus='idle',lastResult='',ticker=0,lastAt=performance.now(), displayed={x:HUB[0],y:HUB[1],angle:0},latest={x:HUB[0],y:HUB[1],angle:0};

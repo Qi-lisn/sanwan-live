@@ -437,8 +437,19 @@ def director():
                 _state["text"] = text; _state["comment"] = item["comment"]; _state["level"] = _lvl; _state["seq"] += 1; _stats["lines"] += 1
             try:
                 sd.play(data, 24000, device=OUT_DEV)
-                sd.wait()
-                time.sleep(0.5 + random.random() * 0.6)
+                dur = len(data) / 24000.0
+                t0 = time.time()
+                interrupted = False
+                while time.time() - t0 < dur:
+                    time.sleep(0.05)
+                    with _lock:
+                        has_reply = any(p.get("comment") for p in _priority)
+                    if has_reply and time.time() - t0 > 1.0:
+                        sd.stop()
+                        interrupted = True
+                        break
+                if not interrupted:
+                    time.sleep(0.5 + random.random() * 0.6)
             finally:
                 with _lock:
                     _state["text"] = ""; _state["comment"] = None; _state["level"] = 0.0; _state["seq"] += 1

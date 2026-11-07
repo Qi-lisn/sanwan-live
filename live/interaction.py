@@ -107,6 +107,11 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
     # 身份询问：直说
     if re.search(r"(你是真人|真人吗|是不是真人|你是AI|是AI吗|机器人吗|虚拟人吗)", msg):
         return {"reply": "我是AI虚拟形象，不是真人，画面是模拟的", "kind": "identity"}
+    # 噪音：纯符号、单字重复、超短
+    if re.fullmatch(r"[^\w\u4e00-\u9fa5]+", msg):
+        return {"reply": "", "kind": "noise", "suppressed": True}
+    if len(msg) <= 12 and re.search(r"(.)\1{3,}", msg):
+        return {"reply": "", "kind": "noise", "suppressed": True}
     # Candidate pre-filter: avoid even calling snapshot() for unrelated comments.
     if not (re.search(r"送|单|餐|目的地|去哪里|去哪|^去(?:学校|便利店|小区|医院|商场)|进度|到了|赚|收入|几单|多久|哪了|在哪|快点|催|超速|红灯|辛苦|累不|加油|安全|慢点|^哈|^6|^冲|厉害|支持|好耶|可爱", msg)):
         return None
@@ -123,8 +128,9 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
         if now - _RECENT.get(key, -1e12) < 24:
             return {"reply": "", "kind": "duplicate", "suppressed": True}
         is_command = picked[1] in ("new_order", "destination_order", "destination_busy")
-        # 游戏指令优先级高于聊天限频：只受 24 秒重复消息约束
-        if not is_command and (now - _LAST_USER.get(who, -1e12) < 7 or now - _LAST_GLOBAL < 1.8):
+        is_query = picked[1] in ("order_info", "earnings", "location_info", "location_idle", "fare")
+        # 指令与查询都优先：只受 24 秒重复消息约束；闲聊才走限频
+        if not (is_command or is_query) and (now - _LAST_USER.get(who, -1e12) < 7 or now - _LAST_GLOBAL < 1.8):
             return {"reply": "", "kind": "cooldown", "suppressed": True}
         # Run the command ONLY after cooldown checks. `_NO_COMMANDS` above
         # emits a marker and never mutates the live delivery state.

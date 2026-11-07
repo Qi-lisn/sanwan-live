@@ -151,24 +151,79 @@ class _NoCommands:
 _NO_COMMANDS = _NoCommands()
 
 
+_SCENE_IDLE = [
+    "这会儿没单，我先靠边停会儿", "你们想让我下一单去哪，弹幕说", "系统还没派单，我先发会儿呆",
+    "等单的时候最舒服，就是有点晒", "今天单量一般，是不是都在上班", "我这车电量还行，能跑一下午",
+    "刚送完一单，喘口气", "有人要点外卖吗，我顺路", "这会儿路上车不多，正好歇着",
+    "我在等一个新订单，别催", "闲着也是闲着，谁想听我念叨", "这城市挺好看，就是坡多",
+]
+
+_SCENE_TO_SHOP = [
+    "出发去商家取餐了，别挡我道", "这单得先去店里拿货，稍等", "骑车去店里的路上，风还挺大",
+    "商家别拖我后腿啊，我赶时间", "取餐路上，顺便看两眼街景", "这店我熟，第三次来了",
+    "导航说前面右转，我信它一次", "车流有点多，我慢点", "去店里的路上，红灯真多",
+    "马上到店，希望餐已经做好了", "这单的店在商场后面，绕一下", "取餐去，别眨眼",
+]
+
+_SCENE_CARRYING = [
+    "已经拿到餐了，正在往客户那边赶", "这单有点远，我加把劲", "路上颠，汤别洒了",
+    "还有一段路，应该来得及", "客户地址有点绕，我在找楼号", "这单送完能歇两分钟",
+    "风把我头发吹乱了，不管了", "前面在修路，我绕一下", "这单的客户备注写了别敲门，我记着",
+    "骑车的时候最怕突然窜出个电动车", "快到了，先把餐袋扶正", "今天路况还行，没堵",
+]
+
+_SCENE_STORY = [
+    "说起来，我昨天送过一单到海边那栋楼，客户是个钓鱼的老头，非要塞我一条鱼。我没要，虚拟形象吃不了。",
+    "你们知道这城市几点最好看吗，傍晚，海面是橘色的，我正好在桥上过。",
+    "我算过，跑一单平均四块多，够买半杯奶茶。所以我一般跑两单才敢想奶茶的事。",
+    "有时候送到门口，听见里面有电视声，我就想，里面的人在过什么样的日子。",
+    "我这车没有后视镜，拐弯全靠回头，所以你们看我老歪头不是卖萌。",
+    "刚来这城市的时候我迷路过三次，现在闭着眼都知道哪条巷子能抄近道。",
+    "送夜单最舒服，路上没人，风是凉的，就是有点孤单。",
+    "有人问我累不累。我这个设定里没有累这个参数，但我可以演一下。",
+]
+
+_LAST_PICK = collections.deque(maxlen=10)
+
+
+def _pick(pool, key):
+    """不重复抽：10 条内不再出现同一条。"""
+    global _SCENE_I
+    for _ in range(20):
+        t = pool[(_SCENE_I * 7 + random.randrange(len(pool))) % len(pool)]
+        if t not in _LAST_PICK:
+            _LAST_PICK.append(t)
+            _SCENE_I += 1
+            return t
+    return pool[random.randrange(len(pool))]
+
+
 def scene_line(ds: dict[str, Any], now: float | None = None) -> str:
-    """Contextual ambient lines for the delivery scene, not old office scripts."""
-    global _LAST_SCENE, _SCENE_I
+    """配送场景的主动台词：按状态分组 + 不重复 + 偶尔讲一段。"""
+    global _LAST_SCENE
     now = time.monotonic() if now is None else now
     with _LOCK:
-        if now - _LAST_SCENE < 15:
-            # The original director calls next_line after every spoken line.
-            # We need a line even during the gap, so cycle casual delivery banter.
-            text = ["路口车还挺多，我先看看方向", "谁有想吃的，弹幕告诉我", "我这小电驴，又得继续跑单了", "你们觉得今晚能送到第几单"][ _SCENE_I % 4]
-        else:
-            o = ds.get("order") or {}
-            if o:
-                text = f"这单{o.get('good', '外卖')}要送去{o.get('place_name', '客户那里')}，你们给我指指路"
-            else:
-                text = "暂时没单，弹幕选一个地方我去跑"
-        _LAST_SCENE = now
-        _SCENE_I += 1
-        return text
+        status = ds.get("status", "idle")
+        o = ds.get("order") or {}
+        # 每 6~8 句插一段稍长的，打破一句一句的节奏
+        if random.random() < 0.08:
+            return _pick(_SCENE_STORY, "story")
+        good = o.get("good", "外卖"); dest = o.get("place_name", "客户")
+        if status == "accepted":
+            pool = _SCENE_TO_SHOP + [
+                f"这单是{good}，送{dest}，我先去店里拿",
+                f"接到一单{good}，目的地{dest}",
+                f"先去取{good}，回头送{dest}",
+            ]
+            return _pick(pool, "shop")
+        if status == "carrying":
+            pool = _SCENE_CARRYING + [
+                f"{good}拿到了，往{dest}走",
+                f"这单送{dest}，路有点远",
+                f"手里拎着{good}，去{dest}那栋",
+            ]
+            return _pick(pool, "carry")
+        return _pick(_SCENE_IDLE, "idle")
 
 
 def queue_destination(place: str) -> None:

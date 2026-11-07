@@ -100,6 +100,13 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
     msg = (message or "").strip()[:120]
     if not msg:
         return None
+
+    # 合规：不讨论/教授 AI 虚拟形象开播方法
+    if re.search(r"(怎么开的播|怎么开播|如何开播|怎么做的|怎么实现|用什么软件|什么模型|什么技术|虚拟人怎么|AI主播怎么|无人直播|自动直播|教程|教教|搭建方法|怎么搭)", msg):
+        return {"reply": "这个不聊，换个话题吧", "kind": "refuse"}
+    # 身份询问：直说
+    if re.search(r"(你是真人|真人吗|是不是真人|你是AI|是AI吗|机器人吗|虚拟人吗)", msg):
+        return {"reply": "我是AI虚拟形象，不是真人，画面是模拟的", "kind": "identity"}
     # Candidate pre-filter: avoid even calling snapshot() for unrelated comments.
     if not (re.search(r"送|单|餐|目的地|去哪里|去哪|^去(?:学校|便利店|小区|医院|商场)|进度|到了|赚|收入|几单|多久|哪了|在哪|快点|催|超速|红灯|辛苦|累不|加油|安全|慢点|^哈|^6|^冲|厉害|支持|好耶|可爱", msg)):
         return None

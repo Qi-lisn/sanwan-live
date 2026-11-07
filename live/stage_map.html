@@ -34,6 +34,12 @@
 #notice{position:absolute;top:88px;right:24px;font-size:11px;border-radius:7px;color:#ffebbf;background:#263047da;padding:7px 10px;z-index:9;display:none}
 #night{position:absolute;inset:0;background:#1423444d;mix-blend-mode:multiply;pointer-events:none;display:none;z-index:6}
 #credits{position:absolute;left:26px;bottom:180px;z-index:7;background:#ffffffb5;color:#45627e;border-radius:8px;padding:5px 9px;font-size:10px}
+
+#aiBadge{position:absolute;left:50%;top:18px;transform:translateX(-50%);z-index:30;
+  background:rgba(12,16,28,.88);border:1px solid rgba(150,170,230,.45);border-radius:999px;
+  padding:9px 26px;font-size:19px;letter-spacing:2px;color:#e8eeff;white-space:nowrap;
+  box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#aiBadge b{color:#9fd0ff}
 </style>
 </head>
 <body>
@@ -42,11 +48,12 @@
   <canvas id="roadCanvas" width="1672" height="941"></canvas>
   <div id="rider"><div class="shadow"></div><img id="riderImg" src="city_assets/ride_0.png" alt="大肥鱼骑手"></div>
   <div id="night"></div>
-  <div class="top"><div class="banner"><b>🐟 三万大肥鱼 · 外卖人生</b><small id="caption">海滨外卖城 · 真实 DSH 订单驱动 · AI 虚拟主播</small></div><div class="livetag">配送直播中</div></div>
+  <div id="aiBadge">本直播间为 <b>AI 虚拟形象</b> · 无真人出镜 · 画面为游戏化模拟</div>
+  <div class="top"><div class="banner"><b>🐟 三万大肥鱼 · 外卖人生</b><small id="caption">海滨外卖城 · AI 虚拟主播 · 本地模拟订单</small></div><div class="livetag">虚拟直播中</div></div>
   <div id="notice"></div><div id="bubble"></div>
   <section id="statusbar"><span id="badge">等待接单</span><div id="orderName">大肥鱼正在摸鱼 🐟</div><div id="destination">送外卖这件事，也是从摸鱼开始的。</div><div id="progressTrack"><div id="progressBar"></div></div><div id="statusFooter"><span id="distance">等待派单</span><span id="left">—</span></div></section>
   <section id="stats"><div class="stat"><b id="delivered">0</b><span>完成订单</span></div><div class="stat"><b id="earned">¥ 0.0</b><span>游戏模拟收入</span></div><div class="stat"><b id="late">0</b><span>超时订单</span></div></section>
-  <div id="credits">游戏化模拟场景 · 非真实接单</div>
+  <div id="credits">AI 虚拟主播 · 游戏化模拟场景 · 非真实接单</div>
 </main></div>
 <script>
 'use strict';

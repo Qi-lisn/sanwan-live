@@ -40,6 +40,18 @@
   padding:9px 26px;font-size:19px;letter-spacing:2px;color:#e8eeff;white-space:nowrap;
   box-shadow:0 6px 24px rgba(0,0,0,.45)}
 #aiBadge b{color:#9fd0ff}
+
+#playbar{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:26;
+  background:rgba(10,14,26,.82);border:1px solid rgba(150,170,230,.4);border-radius:999px;
+  padding:8px 22px;font-size:17px;letter-spacing:1px;color:#dfe7ff;white-space:nowrap}
+#playbar b{color:#ffd08a}
+#goal{position:absolute;right:22px;top:74px;z-index:26;background:rgba(10,14,26,.82);
+  border:1px solid rgba(150,170,230,.4);border-radius:14px;padding:10px 16px;min-width:186px;color:#e8eeff}
+#goal .t{font-size:14px;color:#9fb0dd;letter-spacing:2px}
+#goal .n{font-size:24px;margin-top:2px}
+#goal .n b{color:#ffd08a}
+#goal .bar{height:7px;border-radius:6px;background:#26304d;margin-top:8px;overflow:hidden}
+#goal .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffbd7d,#a98bff);transition:width .6s}
 </style>
 </head>
 <body>
@@ -52,7 +64,9 @@
   <div class="top"><div class="banner"><b>🐟 三万大肥鱼 · 外卖人生</b><small id="caption">海滨外卖城 · AI 虚拟主播 · 本地模拟订单</small></div><div class="livetag">虚拟直播中</div></div>
   <div id="notice"></div><div id="bubble"></div>
   <section id="statusbar"><span id="badge">等待接单</span><div id="orderName">大肥鱼正在摸鱼 🐟</div><div id="destination">送外卖这件事，也是从摸鱼开始的。</div><div id="progressTrack"><div id="progressBar"></div></div><div id="statusFooter"><span id="distance">等待派单</span><span id="left">—</span></div></section>
-  <section id="stats"><div class="stat"><b id="delivered">0</b><span>完成订单</span></div><div class="stat"><b id="earned">¥ 0.0</b><span>游戏模拟收入</span></div><div class="stat"><b id="late">0</b><span>超时订单</span></div></section>
+  <div id="goal"><div class="t">今日目标</div><div class="n"><b id="goalDone">0</b> / <span id="goalAll">20</span> 单</div><div class="bar"><i id="goalBar"></i></div></div>
+<div id="playbar">发「<b>下一单去学校</b>」我就去 · 问「<b>送哪</b>」我答 · 打「<b>1</b>」让我看见你</div>
+<section id="stats"><div class="stat"><b id="delivered">0</b><span>完成订单</span></div><div class="stat"><b id="earned">¥ 0.0</b><span>游戏模拟收入</span></div><div class="stat"><b id="late">0</b><span>超时订单</span></div></section>
   <div id="credits">AI 虚拟主播 · 游戏化模拟场景 · 非真实接单</div>
 </main></div>
 <script>
@@ -138,7 +152,10 @@ function update(d){if(!d||typeof d!=='object')return;state=d;
  $('#progressBar').style.width=(hasOrder?Math.round(isPickup?phase*28:28+phase*72):0)+'%';
  $('#distance').textContent=hasOrder?(isPickup?'前往商家':'前往 '+d.order.place_name):'等待派单';
  $('#left').textContent=hasOrder?String(d.left??'—')+' 秒':'—';
- $('#delivered').textContent=d.delivered??0;$('#earned').textContent='¥ '+Number(d.earned??0).toFixed(1);$('#late').textContent=d.late??0;
+ $('#delivered').textContent=d.delivered??0;
+ const gd=Number(d.delivered??0), ga=Number(d.goal??20);
+ $('#goalDone').textContent=gd; $('#goalAll').textContent=ga;
+ $('#goalBar').style.width=Math.min(100,Math.round(gd/Math.max(1,ga)*100))+'%';$('#earned').textContent='¥ '+Number(d.earned??0).toFixed(1);$('#late').textContent=d.late??0;
  lastStatus=d.status||'idle';
 }
 function drawRoute(){const d=state;if(!d||!d.order)return;const area=LOCATIONS[d.order.place_name]||LOCATIONS['商场'];const points=d.status==='accepted'?HUB_ROUTE:area.route;

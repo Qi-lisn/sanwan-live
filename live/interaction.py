@@ -55,7 +55,7 @@ def _pick_response(msg: str, ds: dict[str, Any], delivery: Any) -> tuple[str, st
         order = delivery.new_order()
         return f"接到了，{order['good']}送{order['place_name']}，出发", "new_order"
 
-    target = re.fullmatch(r"(?:去|送去|下一单去|下一单送|送到)(学校|便利店|小区|医院|商场)", msg)
+    target = re.fullmatch(r"(?:去|送去|下一单去|下一单送|送到)?(学校|便利店|小区|医院|商场)", msg)
     if target:
         name = target.group(1)
         if active:
@@ -104,6 +104,10 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
     # 合规：不讨论/教授 AI 虚拟形象开播方法
     if re.search(r"(怎么开的播|怎么开播|如何开播|怎么做的|怎么实现|用什么软件|什么模型|什么技术|虚拟人怎么|AI主播怎么|无人直播|自动直播|教程|教教|搭建方法|怎么搭)", msg):
         return {"reply": "这个不聊，换个话题吧", "kind": "refuse"}
+    # 打「1」报到
+    if re.fullmatch(r"[1１]{1,6}", msg):
+        return {"reply": random.choice(("看见你了 别走", "到 我记着你了", "有人 好 继续跑")),
+                "kind": "rollcall"}
     # 身份询问：直说
     if re.search(r"(你是真人|真人吗|是不是真人|你是AI|是AI吗|机器人吗|虚拟人吗)", msg):
         return {"reply": "我是AI虚拟形象，不是真人，画面是模拟的", "kind": "identity"}
@@ -113,7 +117,7 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
     if len(msg) <= 12 and re.search(r"(.)\1{3,}", msg):
         return {"reply": "", "kind": "noise", "suppressed": True}
     # Candidate pre-filter: avoid even calling snapshot() for unrelated comments.
-    if not (re.search(r"送|单|餐|目的地|去哪里|去哪|^去(?:学校|便利店|小区|医院|商场)|进度|到了|赚|收入|几单|多久|哪了|在哪|快点|催|超速|红灯|辛苦|累不|加油|安全|慢点|^哈|^6|^冲|厉害|支持|好耶|可爱", msg)):
+    if not (re.search(r"送|单|餐|目的地|去哪里|去哪|^去(?:学校|便利店|小区|医院|商场)|进度|到了|赚|收入|几单|多久|哪了|在哪|快点|催|超速|红灯|辛苦|累不|加油|安全|慢点|^哈|^6|^冲|厉害|支持|好耶|可爱|学校|便利店|小区|医院|商场", msg)):
         return None
     who = _clean_name(nick)
     norm = re.sub(r"\s+", "", msg)
@@ -204,12 +208,20 @@ def _pick(pool, key):
     return pool[random.randrange(len(pool))]
 
 
+_ASKED_AT = {"n": -1}
+
+
 def scene_line(ds: dict[str, Any], now: float | None = None) -> str:
     """配送场景的主动台词：按状态分组 + 不重复 + 偶尔讲一段。"""
     global _LAST_SCENE
     now = time.monotonic() if now is None else now
     with _LOCK:
         status = ds.get("status", "idle")
+        done = int(ds.get("delivered", 0))
+        # 每完成 3 单，主动抛一次二选一，降低观众打字门槛
+        if done > 0 and done % 3 == 0 and done != _ASKED_AT["n"] and status == "idle":
+            _ASKED_AT["n"] = done
+            return "下一单你们说去哪，学校还是商场，打两个字就行"
         o = ds.get("order") or {}
         # 每 6~8 句插一段稍长的，打破一句一句的节奏
         if random.random() < 0.08:

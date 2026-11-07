@@ -144,3 +144,30 @@ def test_strip_question_pattern():
     interaction._LAST_USER.clear(); interaction._LAST_GLOBAL = -1e12; interaction._LAST_CMD = -1e12
     r = interaction.handle_comment("C", "这单是什么", D(), now=2000.0)
     assert r and "蛋糕" in r["reply"]
+
+
+def test_bare_place_name_is_command():
+    import interaction
+    class D:
+        def snapshot(s): return {"status": "idle", "order": None, "left": 0, "delivered": 3, "earned": 20}
+        def new_order(s, **kw): return {"good": "奶茶", "place_name": "学校"}
+    interaction._LAST_USER.clear(); interaction._LAST_GLOBAL = -1e12
+    r = interaction.handle_comment("甲", "学校", D(), now=5000)
+    assert r and r["kind"] in ("destination_order", "destination_busy")
+
+
+def test_vote_every_three_orders():
+    import interaction
+    ds = {"status": "idle", "order": None, "delivered": 3}
+    interaction._ASKED_AT["n"] = -1
+    first = interaction.scene_line(ds)
+    second = interaction.scene_line(ds)
+    assert ("学校" in first and "商场" in first) or ("学校" in second and "商场" in second)
+
+
+def test_rollcall_one():
+    import interaction
+    class D:
+        def snapshot(s): return {"status": "idle", "order": None, "delivered": 0, "earned": 0}
+    r = interaction.handle_comment("路人", "1", D(), now=6000)
+    assert r and r["kind"] == "rollcall" and r["reply"]

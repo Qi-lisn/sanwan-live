@@ -20,6 +20,7 @@ PLACES = [
 ]
 GOODS = ['奶茶', '炒饭', '麻辣烫', '炸鸡', '两杯咖啡', '一份饺子', '烧烤', '蛋糕']
 _SEQ = {'n': 0}
+DAILY_GOAL = int(os.environ.get('SANWAN_DAILY_GOAL', '20'))
 
 
 def _initial():
@@ -149,6 +150,7 @@ def snapshot(now=None):
     o = _state['order']
     result = dict(status=_state['status'], progress=round(_state['progress'], 3),
                   earned=_state['earned'], delivered=_state['delivered'],
+                  goal=DAILY_GOAL, goal_left=max(0, DAILY_GOAL - _state['delivered']),
                   late=_state['late'], total=_state['total'], places=PLACES,
                   wage=_state['wage'], rating=_state['rating'],
                   last_result=_state['last_result'])

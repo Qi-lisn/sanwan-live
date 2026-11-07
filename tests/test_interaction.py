@@ -69,9 +69,9 @@ def test_duplicate_and_cooldown():
     assert interaction.handle_comment('甲', '送哪儿', d, now=100)['reply']
     duplicate = interaction.handle_comment('甲', '送哪儿', d, now=101)
     assert duplicate['suppressed']
-    # Different viewer but too soon: global cooldown.
+    # 查询类不走全局限频：另一个观众问同样的问题也要回答
     other = interaction.handle_comment('乙', '送哪儿', d, now=101.2)
-    assert other['suppressed']
+    assert other['reply']
     later = interaction.handle_comment('乙', '送哪儿', d, now=110)
     assert later['reply']
 

@@ -125,7 +125,7 @@ def handle_comment(nick: str, message: str, delivery: Any, now: float | None = N
         picked = _pick_response(msg, ds, delivery if False else _NO_COMMANDS)
         if picked is None:
             return None
-        if now - _RECENT.get(key, -1e12) < 24:
+        if now - _RECENT.get(key, -1e12) < 8:
             return {"reply": "", "kind": "duplicate", "suppressed": True}
         is_command = picked[1] in ("new_order", "destination_order", "destination_busy")
         is_query = picked[1] in ("order_info", "earnings", "location_info", "location_idle", "fare")

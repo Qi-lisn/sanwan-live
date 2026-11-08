@@ -249,7 +249,18 @@ def next_line():
         INJECT.unlink()
         if lines:
             return {"text": lines[0], "comment": None}
-    if os.environ.get("SANWAN_DELIVERY_CHAT") == "1":
+    # 点歌优先：队列里有歌就先唱，不能被场景台词挡住
+    try:
+        _meta = json.loads(SONGS_META.read_text(encoding="utf-8")).get("songs", [])
+    except Exception:
+        _meta = []
+    if _sing["queue"]:
+        _nxt = _sing["queue"].pop(0)
+        _song = next((x for x in _meta if x["file"] == _nxt), None)
+        if _song:
+            return {"type": "song", "file": _song["file"], "lyrics": _song.get("lyrics", []),
+                    "text": "给你唱一段", "title": _song.get("title", "")}
+    if os.environ.get("SANWAN_DELIVERY_CHAT") == "1" and random.random() < 0.62:
         return {"text": interaction.scene_line(delivery.snapshot()), "comment": None}
     if _seg is not None:
         if _seg_i < len(_seg["lines"]):

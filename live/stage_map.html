@@ -82,27 +82,25 @@ for(let a of Object.values(SPRITES))a.forEach(s=>{const im=new Image();im.src=s}
 // Points are surveyed against the 1672x941 concept-map pixels. These are visual game positions, not GPS coordinates.
 // —— 路网（按 1672×941 概念图实测，节点只放在道路上）——
 const NODES={
-  A:[835,700],  B:[500,700],  C:[1250,700],      // 滨水大道
-  D:[835,520],  E:[500,520],  F:[1250,520],      // 中横路
-  G:[835,300],  H:[500,300],  I:[1250,300],      // 上横路
-  J:[160,210],  K:[1445,430], L:[1320,235], M:[1130,235],   // 公司/商场/学校/小区
-  N:[610,365],  O:[760,330],  P:[1150,345], Q:[505,600],
-  R:[1010,230],                                   // 医院（上排中间那栋白楼）
-  U:[1130,300], V:[1445,520]                      // 小区路口、商场前路
+  // 主街（奶茶/咖啡/汉堡门前那条）
+  S1:[520,430], S2:[630,430], S3:[865,415], S4:[1000,430], S5:[1150,445], S6:[1300,470],
+  // 左竖路（去便利店）
+  V2:[520,530], V1:[520,640],
+  // 上方横路（去小区/学校/医院）
+  R1:[1300,300], R2:[1150,255], R3:[980,245], R4:[860,255],
+  // 支路（门前最后一段）
+  M1:[1420,520], C1:[230,265], P1:[1150,160], P2:[1360,185], H1:[980,150]
 };
-const EDGES=[['A','B'],['A','C'],['A','D'],['D','E'],['D','F'],['D','G'],
-             ['E','H'],['F','I'],['G','H'],['G','I'],['H','J'],['I','K'],
-             ['I','L'],['I','M'],['N','H'],['N','G'],['G','O'],['P','I'],['P','F'],['B','Q'],
-             ['D','Q'],['G','L'],['R','G'],['R','I'],['U','G'],['U','I'],['U','M'],['V','F'],['V','K']];
-const START=[835,700];
-const PLACE_NODE={'便利店':'Q','小区':'M','学校':'L','医院':'R','商场':'K','公司':'J'};
-const SHOP_NODE='N';
+const EDGES=[['S1','S2'],['S2','S3'],['S3','S4'],['S4','S5'],['S5','S6'],
+             ['S1','V2'],['V2','V1'],['S6','M1'],['S6','R1'],['R1','R2'],['R2','R3'],['R3','R4'],
+             ['R2','P1'],['R1','P2'],['R3','H1'],['S1','C1'],['S2','R4']];
+const START=[520,430];
+const PLACE_NODE={'便利店':'V1','小区':'P1','学校':'P2','医院':'H1','商场':'M1','公司':'C1'};
+const SHOP_NODE='S2';
 
 function bfsPath(from,to){
-  // Dijkstra：按实际像素距离选最短，避免"边数少但绕远"的路径
   const adj={}; for(const [a,b] of EDGES){ (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); }
-  const dist={}, prev={}, seen=new Set();
-  dist[from]=0;
+  const dist={}, prev={}, seen=new Set(); dist[from]=0;
   while(true){
     let u=null,best=Infinity;
     for(const k in dist) if(!seen.has(k)&&dist[k]<best){best=dist[k];u=k}
@@ -119,7 +117,7 @@ function bfsPath(from,to){
 }
 
 const HUB=START, PICKUP=NODES[SHOP_NODE];
-const HUB_ROUTE=bfsPath('A',SHOP_NODE);
+const HUB_ROUTE=bfsPath('S1',SHOP_NODE);
 const LOCATIONS={};
 for(const name of ['便利店','小区','学校','医院','商场','公司']){
   const node=PLACE_NODE[name]||'M';

@@ -31,6 +31,7 @@
 .stat b{font-size:23px;display:block}.stat span{font-size:11px;color:#7189a2;display:block;margin-top:4px}
 #bubble{position:absolute;z-index:8;left:50%;top:20%;padding:11px 20px;background:#24365ce6;color:#fff;border:1px solid #d6e0ff65;border-radius:99px;font-weight:800;font-size:18px;opacity:0;transform:translateX(-50%) translateY(-10px);transition:opacity .25s,transform .25s;box-shadow:0 9px 28px #0e274c55;pointer-events:none}
 #bubble.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#speech{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);z-index:28;max-width:70%;padding:12px 20px;background:#172440eF;color:white;border-radius:15px;font-size:22px;text-align:center;display:none}
 #notice{position:absolute;top:88px;right:24px;font-size:11px;border-radius:7px;color:#ffebbf;background:#263047da;padding:7px 10px;z-index:9;display:none}
 #night{position:absolute;inset:0;background:#1423444d;mix-blend-mode:multiply;pointer-events:none;display:none;z-index:6}
 #credits{position:absolute;left:26px;bottom:180px;z-index:7;background:#ffffffb5;color:#45627e;border-radius:8px;padding:5px 9px;font-size:10px}
@@ -62,9 +63,9 @@
   <div id="night"></div>
   <div id="aiBadge">本直播间为 <b>AI 虚拟形象</b> · 无真人出镜 · 画面为游戏化模拟</div>
   <div class="top"><div class="banner"><b>🐟 三万大肥鱼 · 外卖人生</b><small id="caption">海滨外卖城 · AI 虚拟主播 · 本地模拟订单</small></div><div class="livetag">虚拟直播中</div></div>
-  <div id="notice"></div><div id="bubble"></div>
+  <div id="notice"></div><div id="bubble"></div><div id="speech"></div>
   <section id="statusbar"><span id="badge">等待接单</span><div id="orderName">大肥鱼正在摸鱼 🐟</div><div id="destination">送外卖这件事，也是从摸鱼开始的。</div><div id="progressTrack"><div id="progressBar"></div></div><div id="statusFooter"><span id="distance">等待派单</span><span id="left">—</span></div></section>
-  <div id="goal"><div class="t">今日目标</div><div class="n"><b id="goalDone">0</b> / <span id="goalAll">20</span> 单</div><div class="bar"><i id="goalBar"></i></div></div>
+  <div id="goal"><div class="t">本场目标</div><div class="n"><b id="goalDone">0</b> / <span id="goalAll">20</span> 单</div><div class="bar"><i id="goalBar"></i></div></div>
 <div id="playbar">发「<b>下一单去学校</b>」我就去 · 问「<b>送哪</b>」我答 · 打「<b>1</b>」让我看见你</div>
 <section id="stats"><div class="stat"><b id="delivered">0</b><span>完成订单</span></div><div class="stat"><b id="earned">¥ 0.0</b><span>游戏模拟收入</span></div><div class="stat"><b id="late">0</b><span>超时订单</span></div></section>
   <div id="credits">AI 虚拟主播 · 游戏化模拟场景 · 非真实接单</div>
@@ -172,6 +173,15 @@ function animate(now){let dt=Math.min(.1,(now-lastAt)/1000);lastAt=now;ticker+=d
  rider.style.transform='translate(-50%,-82%) scaleX('+(reverse?-1:1)+')';
  requestAnimationFrame(animate)}
 async function poll(){if(demo)return;try{const r=await fetch('/delivery',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);update(await r.json());$('#notice').style.display='none'}catch(e){const el=$('#notice');el.style.display='block';el.textContent='DSH 服务未连接：等待 /delivery';}finally{setTimeout(poll,850)}}
+async function pollCaption(){
+ try {
+  const r=await fetch('/caption',{cache:'no-store'}), d=await r.json();
+  const el=$('#speech');
+  el.textContent=d.text ? (d.comment ? '@'+d.comment.nick+'：'+d.comment.text+'　 /　 ' : '')+d.text : '';
+  el.style.display=d.text?'block':'none';
+ } catch (_) { $('#speech').style.display='none'; }
+ finally { setTimeout(pollCaption,250); }
+}
 // DSH 原动作系统继续工作：在地图舞台上用短动画做出反应，不重建动作后端。
 let lastActionSeq=-1;
 async function pollActions(){
@@ -194,6 +204,6 @@ async function pollActions(){
 }
 if(qs.get('night')==='1')$('#night').style.display='block';
 $('#cityBg').addEventListener('error',()=>{$('#notice').textContent='城市图片未加载：请检查 city_assets/city_map.png';$('#notice').style.display='block'});
-if(demo){$('#caption').textContent='本地动画彩排模式 · 非 DSH 真实接口';showMessage('🎬 进入演示模式')}else {poll();pollActions();}requestAnimationFrame(animate);
+if(demo){$('#caption').textContent='本地动画彩排模式 · 非 DSH 真实接口';showMessage('🎬 进入演示模式')}else {poll();pollActions();pollCaption();}requestAnimationFrame(animate);
 })();
 </script></body></html>

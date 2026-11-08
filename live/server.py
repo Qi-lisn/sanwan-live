@@ -279,9 +279,11 @@ def next_line():
     blk = dayparts.block_at()
     if blk.get("map"):
         ds = delivery.snapshot()
-        if ds["status"] == "idle" and time.time() - _delivery_gap["t"] > 25:
+        if ds["status"] == "idle" and not ds.get("pending") and time.time() - _delivery_gap["t"] > 25:
             o = delivery.new_order()
             _delivery_gap["t"] = time.time()
+            if o.get("queued"):
+                return {"text": "这单先送完，下一单已经安排", "comment": None}
             return {"text": f"接单 一份{o['good']} 送到{o['place_name']}", "comment": None}
         if ds["status"] == "idle" and ds["last_result"]:
             return {"text": ds["last_result"], "comment": None}
@@ -444,7 +446,7 @@ def director():
                     time.sleep(0.05)
                     with _lock:
                         has_reply = any(p.get("comment") for p in _priority)
-                    if has_reply and time.time() - t0 > 1.0:
+                    if has_reply and not item.get("comment") and time.time() - t0 > 1.0:
                         sd.stop()
                         interrupted = True
                         break
@@ -686,7 +688,7 @@ class H(SimpleHTTPRequestHandler):
                     except Exception:
                         place = None
             o = delivery.new_order(place=place)
-            body = json.dumps({"ok": True, "order": o}, ensure_ascii=False).encode()
+            body = json.dumps({"ok": True, "order": o, "queued": bool(o.get("queued"))}, ensure_ascii=False).encode()
             self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
             return
@@ -744,7 +746,7 @@ class H(SimpleHTTPRequestHandler):
                 if val >= 10:
                     o2 = delivery.new_order(place="mall")
                     with _lock:
-                        _priority.append({"text": f"大单 送{o2['place_name']}", "comment": None})
+                        _priority.append({"text": f"{'下一单' if o2.get('queued') else '大单'} 送{o2['place_name']}", "comment": None})
                 if behavior.auto_allowed() and time.time() - _gift_act["t"] > GIFT_ACTION_COOLDOWN:
                     _gift_act["t"] = time.time()
                     try:
@@ -830,7 +832,13 @@ class H(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
         return super().do_GET()
 
+def delivery_loop():
+    while True:
+        delivery.tick()
+        time.sleep(0.25)
+
 if __name__ == "__main__":
+    threading.Thread(target=delivery_loop, daemon=True).start()
     print("output device:", OUT_DEV, flush=True)
     threading.Thread(target=bgm_loop, daemon=True).start()
     threading.Thread(target=director, daemon=True).start()

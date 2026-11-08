@@ -53,6 +53,8 @@ def _pick_response(msg: str, ds: dict[str, Any], delivery: Any) -> tuple[str, st
         if active:
             return "这单还没送到呢，送完再接下一单", "order_busy"
         order = delivery.new_order()
+        if order.get("queued"):
+            return "这单先送完，下一单已经安排", "order_busy"
         return f"接到了，{order['good']}送{order['place_name']}，出发", "new_order"
 
     target = re.fullmatch(r"(?:去|送去|下一单去|下一单送|送到)?(学校|便利店|小区|医院|商场)", msg)
@@ -60,9 +62,11 @@ def _pick_response(msg: str, ds: dict[str, Any], delivery: Any) -> tuple[str, st
         name = target.group(1)
         if active:
             if delivery is not _NO_COMMANDS:
-                queue_destination(PLACES[name])
+                delivery.new_order(place=PLACES[name])
             return f"这单先送完，下单我再去{name}", "destination_busy"
         order = delivery.new_order(place=PLACES[name])
+        if order.get("queued"):
+            return f"这单先送完，下单我再去{name}", "destination_busy"
         return f"好，{order['good']}送{name}，这就出发", "destination_order"
 
     if re.search(r"(送哪|送到哪|去哪儿|去哪里|目的地|送什么|送的什么|送的啥|这单是什么|这单是啥|什么单|什么餐|啥外卖|点了什么)", msg):

@@ -32,7 +32,7 @@
     try {
       const place = btn.dataset.dest;
       const resp = await post('/delivery/new' + (place?'?place='+encodeURIComponent(place):''));
-      feedback.textContent = '已派单：'+resp.order.good+' → '+resp.order.place_name+'。直播舞台将自动同步。';
+      feedback.textContent = resp.queued ? '已安排下一单：'+resp.order.place_name : '已派单：'+resp.order.good+' → '+resp.order.place_name;
       await refresh();
     } catch(e) {feedback.textContent='派单失败：'+e.message}
   }));

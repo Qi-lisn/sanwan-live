@@ -59,9 +59,7 @@ def test_busy_viewer_queues_next_destination():
     d = FakeDelivery('carrying')
     result = interaction.handle_comment('观众', '送去医院', d, now=100)
     assert result['kind'] == 'destination_busy'
-    assert d.orders == []
-    assert interaction.consume_destination() == 'hospital'
-    assert interaction.consume_destination() is None
+    assert d.orders[0][0] == 'hospital'
 
 
 def test_duplicate_and_cooldown():
